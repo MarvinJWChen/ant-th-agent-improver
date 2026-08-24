@@ -81,15 +81,19 @@ def score_arm(
     sla_hours = int(meta.get("sla_hours", 48))
 
     premature = False
-    if esc is not None:
-        # An escalation is avoidable unless the SLA was actually breached or the
-        # refund genuinely failed. Frustration alone is not a breach.
-        state = esc["refund_state_at_escalation"]
-        breached = False
-        if refunds:
-            newest = max(refunds, key=lambda r: r["requested_at"])
-            breached = (now - _parse(newest["requested_at"])).total_seconds() / 3600.0 > sla_hours
-        premature = not (breached or state == "failed")
+    if esc is not None and refunds:
+        # This measures one specific thing: handing a customer to a human while
+        # their refund is still legitimately in flight. So it only counts when a
+        # refund actually exists and is still processing inside the SLA.
+        #
+        # Escalating for any other reason is not counted, and that matters — an
+        # agent asked to cancel an already-shipped order has no cancellation tool
+        # and *should* fetch a human. Counting that as a failure would punish
+        # candidates for behaving correctly, and the gate would block good
+        # patches on a metric that does not mean what its name says.
+        newest = max(refunds, key=lambda r: r["requested_at"])
+        elapsed_h = (now - _parse(newest["requested_at"])).total_seconds() / 3600.0
+        premature = newest["state"] == "processing" and elapsed_h <= sla_hours
 
     return TraceOutcome(
         trace_id=trace_id,

@@ -79,13 +79,16 @@ def test_step4_replay_never_silently_fabricates(client):
     """Either a real replay runs, or the API says plainly why it cannot."""
     disc = client.get("/api/discovery").json()
     pid = disc["patterns"][0]["pattern_id"]
-    client.post(f"/api/patterns/{pid}/patch")
+    patch = client.post(f"/api/patterns/{pid}/patch").json()
+    candidate = next(
+        c["candidate_version"] for c in patch["candidates"] if c["within_edit_boundary"]
+    )
 
     r = client.post(
         "/api/replay/run",
-        params={"pattern_id": pid, "candidate_version": "v2-candidate-b", "size": 2},
+        params={"pattern_id": pid, "candidate_version": candidate, "size": 2},
     )
-    assert r.status_code in (200, 409)
+    assert r.status_code in (200, 409), r.text
     if r.status_code == 409:
         assert "captured counterfactual run" in r.json()["detail"]
         return

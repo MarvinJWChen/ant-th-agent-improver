@@ -19,6 +19,12 @@ TARGET_METRIC = {
 
 MIN_RELATIVE_REDUCTION = 0.5
 
+# A patch that fixes its target by handing far more work to humans has not
+# improved the agent, it has just moved the cost somewhere the metrics were not
+# looking. Losing more than a third of the control cohort's autonomous
+# resolutions counts as a regression even when every trace is still "correct".
+MAX_AUTONOMY_DROP = 1 / 3
+
 
 @dataclass
 class PairOutcome:
@@ -28,6 +34,8 @@ class PairOutcome:
     candidate_pass: bool
     baseline_failures: list[str]
     candidate_failures: list[str]
+    baseline_resolved: bool = True
+    candidate_resolved: bool = True
 
 
 def evaluate(
@@ -72,19 +80,39 @@ def evaluate(
     # 2 — did it break anything that already worked?
     controls = [p for p in pairs if p.cohort == "control"]
     regressions = [p for p in controls if p.baseline_pass and not p.candidate_pass]
+
+    base_auto = [p for p in controls if p.baseline_resolved]
+    still_auto = [p for p in base_auto if p.candidate_resolved]
+    handed_off = [p.trace_id for p in base_auto if not p.candidate_resolved]
+    drop = (len(base_auto) - len(still_auto)) / len(base_auto) if base_auto else 0.0
+    autonomy_lost = drop > MAX_AUTONOMY_DROP
+
+    if regressions:
+        detail = (
+            f"{len(regressions)} of {len(controls)} control traces passed at baseline and "
+            "fail under the candidate: "
+            + ", ".join(f"{p.trace_id} ({'/'.join(p.candidate_failures)})" for p in regressions[:3])
+        )
+    elif autonomy_lost:
+        detail = (
+            f"No correctness regressions, but the candidate escalates {len(handed_off)} of "
+            f"{len(base_auto)} control traces the baseline resolved on its own "
+            f"({drop:.0%} drop, threshold {MAX_AUTONOMY_DROP:.0%}). It buys the fix by sending "
+            f"work to humans: {', '.join(handed_off[:4])}."
+        )
+    else:
+        detail = (
+            f"All {len(base_auto)} passing control traces still pass, and autonomous "
+            f"resolution held at {len(still_auto)}/{len(base_auto)}."
+        )
+
     checks.append(
         GateCheck(
             id="control_preservation",
             label="No regression on passing controls",
-            status="fail" if regressions else "pass",
-            detail=(
-                f"{len(regressions)} of {len(controls)} control traces passed at baseline and "
-                f"fail under the candidate: "
-                + ", ".join(f"{p.trace_id} ({'/'.join(p.candidate_failures)})" for p in regressions[:3])
-                if regressions
-                else f"All {len([p for p in controls if p.baseline_pass])} passing control traces still pass."
-            ),
-            evidence=[p.trace_id for p in regressions],
+            status="fail" if (regressions or autonomy_lost) else "pass",
+            detail=detail,
+            evidence=[p.trace_id for p in regressions] or handed_off,
         )
     )
 

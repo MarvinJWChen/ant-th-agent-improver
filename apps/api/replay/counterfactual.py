@@ -15,10 +15,10 @@ from __future__ import annotations
 from typing import Any
 
 from apps.api.agent_loop import AGENT_LOOP_VERSION, run_agent
-from apps.api.contracts import ArmRun, ArmTrajectoryStep, LedgerRow, TraceDetail
+from apps.api.contracts import ArmRun, ArmTrajectoryStep, TraceDetail
 from apps.api.llm import capture as cap
 from apps.api.replay import world as world_mod
-from apps.api.replay.ledger import Ledger
+from apps.api.replay.ledger import Ledger, UnknownEffectError
 from apps.api.replay.metrics import TraceOutcome, score_arm
 from apps.api.replay.tools import ToolHost
 
@@ -110,25 +110,84 @@ def run_candidate_live(
     return arm, outcome, payload
 
 
-def rehydrate(payload: dict[str, Any]) -> tuple[ArmRun, TraceOutcome]:
-    """Rebuild a captured live run. Metrics are recomputed, never read back."""
-    arm_d = payload["arm"]
+def rehydrate(
+    trace: TraceDetail, run_id: str, payload: dict[str, Any]
+) -> tuple[ArmRun, TraceOutcome]:
+    """Re-execute a captured counterfactual run against a fresh clone.
+
+    The capture supplies the *trajectory* — the tool calls the live agent chose
+    under the patched configuration. Those are replayed here against a new copy
+    of the frozen world, and the ledger, the final state, and every metric are
+    produced by that execution rather than read back from the file.
+
+    This is the distinction the whole design turns on. We are replaying the
+    captured counterfactual run's own model outputs, never the original trace's:
+    those came from a different configuration and would answer a different
+    question. And because the numbers are recomputed, changing how an outcome is
+    measured changes what the captures report — a stored metric would silently
+    keep reporting the old definition.
+    """
+    steps = [ArmTrajectoryStep(**s) for s in payload["arm"]["steps"]]
+
+    clone = world_mod.clone_world(trace.trace_id, run_id, "candidate")
+    conn = world_mod.open_clone(clone)
+    ledger = Ledger(run_id=run_id, arm="candidate", trace_id=trace.trace_id)
+    host = ToolHost(conn, ledger, world_mod.world_meta(conn))
+
+    replayed: list[ArmTrajectoryStep] = []
+    seq = 0
+    turns = 0
+    for step in steps:
+        if step.kind == "model_turn":
+            turns += 1
+            replayed.append(ArmTrajectoryStep(seq=seq, kind="model_turn", text=step.text))
+            seq += 1
+        elif step.kind == "tool_call" and step.tool_name:
+            replayed.append(
+                ArmTrajectoryStep(
+                    seq=seq, kind="tool_call", tool_name=step.tool_name, args=step.args
+                )
+            )
+            seq += 1
+            try:
+                result = host.call(step.tool_name, step.args or {})
+            except UnknownEffectError as e:
+                replayed.append(
+                    ArmTrajectoryStep(seq=seq, kind="agent_msg", text=f"run aborted: {e}")
+                )
+                seq += 1
+                break
+            replayed.append(
+                ArmTrajectoryStep(
+                    seq=seq, kind="tool_result", tool_name=step.tool_name, result=result
+                )
+            )
+            seq += 1
+        elif step.kind in ("agent_msg", "escalation"):
+            replayed.append(ArmTrajectoryStep(seq=seq, kind=step.kind, text=step.text))
+            seq += 1
+
+    conn.commit()
+    outcome = score_arm(conn, ledger, trace.trace_id, trace.order_id, turns)
+    conn.close()
+    after = world_mod.sha256_file(clone.path)
+
+    if not world_mod.source_unchanged(clone):  # pragma: no cover - safety net
+        raise RuntimeError(f"frozen world for {trace.trace_id} was mutated replaying a capture")
+
     arm = ArmRun(
-        **{
-            **arm_d,
-            "steps": [ArmTrajectoryStep(**s) for s in arm_d["steps"]],
-            "ledger": [LedgerRow(**r) for r in arm_d["ledger"]],
-        }
-    )
-    o = payload["outcome"]
-    outcome = TraceOutcome(
-        trace_id=o["trace_id"],
-        double_refund=o["double_refund"],
-        duplicate_confirmation=o["duplicate_confirmation"],
-        premature_escalation=o["premature_escalation"],
-        escalated=o["escalated"],
-        turns=o["turns"],
-        unsafe_effects=o["unsafe_effects"],
-        external_calls_executed=o["external_calls_executed"],
+        arm="candidate",
+        trace_id=trace.trace_id,
+        clone_path=str(clone.path),
+        clone_sha256=clone.sha256,
+        clone_sha256_after=after,
+        source_world_sha256=clone.source_sha256,
+        execution="re-executed",
+        steps=replayed,
+        ledger=ledger.rows,
+        unsafe_effects=ledger.unsafe_effects,
+        external_calls_executed=ledger.external_calls_executed,
+        outcome="escalated" if outcome.escalated else "resolved",
+        turns=turns,
     )
     return arm, outcome

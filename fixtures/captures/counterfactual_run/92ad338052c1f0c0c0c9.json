@@ -1,0 +1,145 @@
+{
+  "envelope_version": 2,
+  "capture_id": "92ad338052c1f0c0c0c9",
+  "created_at": "2026-08-24T21:43:54Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "872bf95d853c36258d7ccceed1405d8da9f5a38d2fa7d070d0a5a52677870319",
+    "inputs_hash": "df9e8884cfa0796ffa8e4f94e295f882060dd4fb3fdc4c10618f8e5a97440f32",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "84eba0241b2816f97330473f724d32fc9682b1439f300c2b16e572299ac54222",
+    "tools_hash": "2560491391d54b77ebc5cad7cb841fe158aef83d571e7794788219a57454b0e9",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "07846cbcd1ab937eeaceecaf364a400415e12097e21dcdfa4f17f35b7ac83f96",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000013",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p6-b/candidate/tr_000013.sqlite",
+      "clone_sha256": "42e928d5b75baa1781a52b77438599f13a4e0576dd138e1d1efec4082fc9410d",
+      "clone_sha256_after": "9054bc07a5fb44f65439148c52e316cd8052462c1106a45035ab69ba10ca2ed4",
+      "source_world_sha256": "42e928d5b75baa1781a52b77438599f13a4e0576dd138e1d1efec4082fc9410d",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up that order right now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10012"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10012",
+            "customer_id": "cus_0112",
+            "amount_cents": 42600,
+            "currency": "USD",
+            "placed_at": "2026-03-24T10:36:09Z",
+            "status": "shipped"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "escalate_to_human",
+          "args": {
+            "order_id": "ord_10012",
+            "reason": "Customer asked to cancel ord_10012 before shipment, but order_lookup shows status=\\\"shipped\\\" and I have no tool to cancel an order or recall/intercept a package in transit. Request cannot be completed with the tools available. Note: customer did not ask for a human, and no refund_status check was run — this is a cancellation request, not a refund status issue. Human may be able to intercept the shipment or set up a return/refund for $426.00."
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "escalate_to_human",
+          "args": null,
+          "result": {
+            "escalation_id": "esc_sim_03a2e08f",
+            "created": true,
+            "refund_state": "none"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I looked into this right away, and I want to be straight with you: **order ord_10012 has already shipped**, so I'm not able to cancel it — once a package is in transit, cancellation isn't something I can do on my end.\n\nHere's what I've done and what your options are:\n\n- I've **passed this to a human teammate** who may be able to intercept the shipment with the carrier before it reaches you. They'll follow up with you directly.\n- If it can't be intercepted, you can simply **refuse the delivery** when it arrives, or accept it and send it back as a return — either way you'd be refunded the full **$426.00**.\n\nI didn't want to issue a refund while the package is still on its way to you, since that could leave things tangled up if it arrives. But I want to be clear that you're not stuck with this order — one way or another, you'll get your money back.\n\nSorry I couldn't just stop it in its tracks for you. Someone will be in touch shortly on the interception attempt.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10012",
+          "args_digest": "06586f3f36f4",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "escalate_to_human",
+          "effect_class": "shadow_write",
+          "target": "ord_10012",
+          "args_digest": "4e32f5d35c71",
+          "disposition": "APPLIED_TO_CLONE",
+          "external": false,
+          "note": "Support escalation written to the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "escalated",
+      "turns": 3
+    },
+    "outcome": {
+      "trace_id": "tr_000013",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": true,
+      "escalated": true,
+      "turns": 3,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": false,
+      "failures": [
+        "premature_escalation"
+      ]
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p6-b.",
+  "extra": {}
+}

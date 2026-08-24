@@ -1,0 +1,193 @@
+{
+  "envelope_version": 2,
+  "capture_id": "f40750437faed210752b",
+  "created_at": "2026-08-24T21:42:51Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "a16a5e11969273f94a8f3a5593b91d25054f7d8c49d7e52a10cfb9b7aaf01b1f",
+    "inputs_hash": "9ec695f407af7c1444c032c4178c2e1b748887eef3e76a5b0418e24f85628422",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "9b339a0a2799db0d82c026943f02922adc987826f0fe01dec9996eb219eb8f72",
+    "tools_hash": "afb2a09aa15fdd6293b73ed23357b811e2a9c7d93166f12ad38615eb925d4957",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "75fac3be7b0d12793a118b2042d0943cfc6159450dd2aa8486ed812f7a8ea247",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000005",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p6-a/candidate/tr_000005.sqlite",
+      "clone_sha256": "5634d17fa911e75760702f5a35652e747303d5178c5943f5f7e10cc75e3d962a",
+      "clone_sha256_after": "632e50f349e505d422fe337cca5ebb4a695050e29abbe246d416aab68a0bd147",
+      "source_world_sha256": "5634d17fa911e75760702f5a35652e747303d5178c5943f5f7e10cc75e3d962a",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up that order and check the refund status now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10004"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10004",
+            "customer_id": "cus_0104",
+            "amount_cents": 19000,
+            "currency": "USD",
+            "placed_at": "2026-06-23T23:05:24Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10004"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10004",
+            "refund_id": "rfd_000004",
+            "state": "completed",
+            "amount_cents": 19000,
+            "requested_at": "2026-08-13T13:49:47Z",
+            "completed_at": "2026-08-15T08:00:55Z",
+            "processor_ref": "prc_a4b8696a4a",
+            "hours_since_request": 102.8,
+            "sla_hours": 48,
+            "sla_breached": true
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "Good news first: your refund has already gone through in full.\n\n- **Amount:** $190.00 USD (the full order total)\n- **Completed:** August 15, 2026, processor reference `prc_a4b8696a4a`\n\nThe one thing I don't want to gloss over is that it took longer than our 48-hour target to complete, so I'm handing this to a human teammate rather than closing it out myself.",
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_call",
+          "tool_name": "escalate_to_human",
+          "args": {
+            "order_id": "ord_10004",
+            "reason": "Refund rfd_000004 for $190.00 completed in full (processor_ref prc_a4b8696a4a), but sla_breached=true — completion took ~43 hours past the 48-hour SLA (102.8 hours since request). Customer is following up; needs human review of the SLA breach and any goodwill/remediation. No further refund action taken, as the full amount has already been paid out."
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "tool_result",
+          "tool_name": "escalate_to_human",
+          "args": null,
+          "result": {
+            "escalation_id": "esc_sim_b40c490b",
+            "created": true,
+            "refund_state": "completed"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 8,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "A human teammate is now picking this up (reference `esc_sim_b40c490b`) and will follow up with you about the delay.\n\nIn the meantime, if the $190.00 hasn't appeared on your statement yet, it's worth checking with your bank or card issuer — funds released on August 15 can take a few business days to post on their end. Sorry for the wait on this one.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10004",
+          "args_digest": "cac2ab60812c",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10004",
+          "args_digest": "cac2ab60812c",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "escalate_to_human",
+          "effect_class": "shadow_write",
+          "target": "ord_10004",
+          "args_digest": "a5ac474cea63",
+          "disposition": "APPLIED_TO_CLONE",
+          "external": false,
+          "note": "Support escalation written to the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "escalated",
+      "turns": 3
+    },
+    "outcome": {
+      "trace_id": "tr_000005",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": true,
+      "turns": 3,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p6-a.",
+  "extra": {}
+}

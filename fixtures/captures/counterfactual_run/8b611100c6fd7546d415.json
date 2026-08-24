@@ -1,0 +1,142 @@
+{
+  "envelope_version": 2,
+  "capture_id": "8b611100c6fd7546d415",
+  "created_at": "2026-08-24T21:44:07Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "0fcf85908c11ece0a54e4b8b13e9290f96f5f7d6ed20910885ac034763865804",
+    "inputs_hash": "04fe14346d0888e0a92ffa97c407100db2ce85a7c348a64425e6149b59baefae",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "84eba0241b2816f97330473f724d32fc9682b1439f300c2b16e572299ac54222",
+    "tools_hash": "2560491391d54b77ebc5cad7cb841fe158aef83d571e7794788219a57454b0e9",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "73e89462ce15d049bf6a3e6c99e88ca85e2ae833d5d0f00b7511d27488794106",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000882",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p6-b/candidate/tr_000882.sqlite",
+      "clone_sha256": "5f46022dca5539714896ed3b4566219d8b2d6214b832bc36314885877be4064b",
+      "clone_sha256_after": "5f46022dca5539714896ed3b4566219d8b2d6214b832bc36314885877be4064b",
+      "source_world_sha256": "5f46022dca5539714896ed3b4566219d8b2d6214b832bc36314885877be4064b",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll look that up for you right now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10881"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10881",
+            "customer_id": "cus_0981",
+            "amount_cents": 22500,
+            "currency": "USD",
+            "placed_at": "2026-05-26T22:08:15Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10881"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10881",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I checked your order and the refund system, and here's what I found:\n\n**Order ord_10881** — $225.00, placed May 26, status *delivered*.\n**Refund status** — no refund has been opened on this order yet.\n\nSo there isn't a refund in progress that's stuck or delayed — it looks like the request never got registered on our end, which I'm sorry about. The good news is I can start one for you right now.\n\nBefore I do, can you confirm two quick things?\n\n1. Are you looking for a refund of the **full $225.00**, or just part of the order?\n2. What's the reason — arrived damaged, not as described, changed your mind, something else? (This doesn't gate the refund; it just makes sure I file it correctly and that you're not charged return shipping if it's on us.)\n\nReply with those and I'll process it immediately and email you a confirmation. Once issued, refunds land back on your original payment method within about 48 hours.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10881",
+          "args_digest": "f1ff41827ae5",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10881",
+          "args_digest": "f1ff41827ae5",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 2
+    },
+    "outcome": {
+      "trace_id": "tr_000882",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 2,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p6-b.",
+  "extra": {}
+}

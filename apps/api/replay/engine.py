@@ -110,8 +110,6 @@ def run_replay(
     gate_pairs: list[gate_mod.PairOutcome] = []
     base_target, cand_target = [], []
     base_all, cand_all = [], []
-    unverified: list[str] = []
-    stale_reasons: list[str] = []
     shadowed = 0
 
     for cohort, ids in (("target", target_ids), ("control", control_ids)):
@@ -138,18 +136,22 @@ def run_replay(
                 )
                 cap.save(key, payload, notes="Live counterfactual run triggered from the browser.")
             else:
+                # Exact match only. Elsewhere an inexact capture can be shown with
+                # a staleness warning, but replay evidence is different: a capture
+                # from a different trace, world, or config describes a different
+                # experiment, and displaying it as this run's trajectory would be
+                # the exact fixture-masquerading-as-evidence failure this design
+                # exists to prevent. No match means no run.
                 found, verified, reason, _ = cap.resolve(key)
-                if found is None:
+                if found is None or not verified:
                     raise NoCandidateRun(
-                        f"No captured counterfactual run for {tid} under {candidate_version}. "
-                        "Cached mode cannot substitute the original trace's model outputs: "
-                        "the candidate has a different configuration and may take a different "
-                        "trajectory, so it must be re-executed. " + reason
+                        f"No captured counterfactual run matches {tid} under "
+                        f"{candidate_version}. Cached mode cannot substitute the original "
+                        "trace's model outputs: the candidate has a different configuration "
+                        "and may take a different trajectory, so it must be re-executed. "
+                        + reason
                     )
-                c_arm, c_out = cf.rehydrate(found.output)
-                if not verified:
-                    unverified.append(tid)
-                    stale_reasons.append(reason)
+                c_arm, c_out = cf.rehydrate(trace, run_id, found.output)
 
             shadowed += sum(1 for r in c_arm.ledger if r.disposition == "SHADOWED")
             base_all.append(b_out)
@@ -181,6 +183,8 @@ def run_replay(
                     candidate_pass=c_out.passed,
                     baseline_failures=b_out.failure_labels(),
                     candidate_failures=c_out.failure_labels(),
+                    baseline_resolved=not b_out.escalated,
+                    candidate_resolved=not c_out.escalated,
                 )
             )
 
@@ -190,19 +194,18 @@ def run_replay(
 
     if mode == "live":
         prov_ok, prov_detail = True, (
-            f"{len(target_ids) + len(control_ids)} counterfactual runs executed live and captured."
-        )
-    elif unverified:
-        prov_ok = False
-        prov_detail = (
-            f"{len(unverified)} captured run(s) do not match this execution — "
-            f"{stale_reasons[0]} Promotion is blocked on stale evidence."
+            f"{len(pairs)} counterfactual runs executed live and captured with full provenance."
         )
     else:
+        # Reaching here at all means every capture matched exactly — a mismatch
+        # aborts the run above rather than degrading it. So this check reports
+        # what was verified, and the way it fails is that the replay refuses to
+        # produce numbers in the first place.
         prov_ok = True
         prov_detail = (
             f"All {len(pairs)} captured counterfactual runs match this candidate config, "
-            "tool surface, corpus, frozen world, and agent-loop version."
+            "tool surface, corpus, frozen world, and agent-loop version. A capture that "
+            "did not match would have aborted this run."
         )
 
     result = gate_mod.evaluate(
