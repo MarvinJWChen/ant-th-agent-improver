@@ -122,9 +122,13 @@ class PatternCard(BaseModel):
     size: int
     share_of_flagged: float
     discovered_by: Literal["evaluator+anomaly", "anomaly-only"]
-    # Deliberately unset until an LLM diagnosis classifies it. The clusterer
-    # groups behaviour; it has no basis for asserting the kind of fix required.
+    # Both stay unset until an LLM diagnosis classifies the cluster. The
+    # clusterer groups behaviour; it has no basis for asserting whether that
+    # behaviour is a problem, or what kind of fix it needs. They are filled in
+    # from a *verified capture* when one exists, so the discovery view can group
+    # by remediation kind without re-running any inference.
     remediation_kind: Family | None = None
+    verdict: Literal["failure", "expected_behaviour"] | None = None
     top_features: list[str]
     exemplar_trace_ids: list[str]
     representative_evidence: list[str]

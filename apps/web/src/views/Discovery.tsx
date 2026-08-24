@@ -2,9 +2,41 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge, Button, Card, SectionHeading, StatTile, Table } from "../components";
 import { api, fmtMs, pct } from "../lib/api";
-import type { DiscoveryResult, FlaggedTrace, PatternCard } from "../lib/api";
+import type { DiscoveryResult, FlaggedTrace, PatternCard, RemediationKind } from "../lib/api";
 import { useAction, useAsync, useJourney } from "../lib/state";
 import { Failed, Loading } from "../lib/ui";
+
+/**
+ * Clusters are grouped by the remediation their diagnosis called for, so the
+ * distinct *kinds* of fix are visible before clicking into anything. The
+ * grouping is a read of captured diagnoses, never a new inference, and nothing
+ * is hidden — the smaller clusters collapse to one line rather than disappear.
+ */
+const GROUPS: { kind: RemediationKind; title: string; blurb: string }[] = [
+  {
+    kind: "config",
+    title: "Fixable in agent configuration",
+    blurb: "Prompt or tool-description wording. Provable by replay, so these can be promoted.",
+  },
+  {
+    kind: "code",
+    title: "Needs a tool code change",
+    blurb: "The tool contract itself is unsafe. No instruction to the agent can fix it.",
+  },
+  {
+    kind: "process",
+    title: "Needs an operational change",
+    blurb: "The agent behaved reasonably. The fix is a policy, a metric, or an upstream system.",
+  },
+  {
+    kind: "none",
+    title: "Not a problem",
+    blurb: "Uncommon but correct behaviour. Nothing is proposed for these.",
+  },
+];
+
+/** Cards shown in full per group; the remainder collapse to one line each. */
+const EXPANDED_PER_GROUP = 2;
 
 export function Discovery() {
   const nav = useNavigate();
@@ -16,12 +48,20 @@ export function Discovery() {
   if (loading) return <Loading label="Clustering flagged traces" />;
   if (error || !data) return <Failed message={error ?? "no data"} />;
 
+  const open = (p: PatternCard) => {
+    journey.mark({ activePatternId: p.pattern_id });
+    nav(`/patterns/${p.pattern_id}`);
+  };
+
+  const undiagnosed = data.patterns.filter((p) => !p.remediation_kind);
+  const failures = data.patterns.filter((p) => p.verdict === "failure").length;
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <SectionHeading
         as="h1"
         title="Recurring behaviours"
-        subtitle={`${data.patterns.length} clusters found in ${data.n_traces_scanned.toLocaleString()} production traces. Some are failures; some are simply uncommon and correct.`}
+        subtitle={`${data.patterns.length} clusters in ${data.n_traces_scanned.toLocaleString()} production traces — ${failures} are real failures, the rest are uncommon but correct.`}
         right={
           <Button
             variant="secondary"
@@ -43,6 +83,28 @@ export function Discovery() {
         <StatTile label="Found by anomaly only" value={data.n_anomaly_only} sublabel="no observable signal fired" />
       </div>
 
+      {GROUPS.map((g) => {
+        const members = data.patterns
+          .filter((p) => p.remediation_kind === g.kind)
+          .sort((a, b) => b.size - a.size);
+        if (members.length === 0) return null;
+        return (
+          <PatternGroup key={g.kind} group={g} members={members} onOpen={open} />
+        );
+      })}
+
+      {undiagnosed.length > 0 && (
+        <PatternGroup
+          group={{
+            kind: "none",
+            title: "Not yet diagnosed",
+            blurb: "No diagnosis has been captured for these yet — open one to run it.",
+          }}
+          members={undiagnosed}
+          onOpen={open}
+        />
+      )}
+
       <Card title="How these were found">
         <div className="grid gap-6 md:grid-cols-2">
           <div>
@@ -62,24 +124,11 @@ export function Discovery() {
           </div>
         </div>
         <p className="mt-6 border-t border-hairline pt-5 leading-relaxed text-muted">
-          The {data.n_flagged} traces above are a <span className="text-secondary">review queue</span>, not
-          a failure count — both signals are deliberately high-recall. Separating genuine failures
-          from rare-but-correct behaviour is what the clustering and the diagnosis do next.
+          The {data.n_flagged} traces are a <span className="text-secondary">review queue</span>, not a
+          failure count — both signals are deliberately high-recall. Grouping above comes from each
+          cluster's own diagnosis; the clusterer has no view on what kind of fix anything needs.
         </p>
       </Card>
-
-      <div className="space-y-4">
-        {data.patterns.map((p) => (
-          <PatternRow
-            key={p.pattern_id}
-            pattern={p}
-            onInvestigate={() => {
-              journey.mark({ activePatternId: p.pattern_id });
-              nav(`/patterns/${p.pattern_id}`);
-            }}
-          />
-        ))}
-      </div>
 
       <div>
         <button
@@ -116,15 +165,79 @@ export function Discovery() {
   );
 }
 
+function PatternGroup({
+  group,
+  members,
+  onOpen,
+}: {
+  group: { kind: RemediationKind; title: string; blurb: string };
+  members: PatternCard[];
+  onOpen: (p: PatternCard) => void;
+}) {
+  const isNone = group.kind === "none";
+  const [expanded, setExpanded] = useState(!isNone);
+  const shown = expanded ? members.slice(0, EXPANDED_PER_GROUP) : [];
+  const rest = expanded ? members.slice(EXPANDED_PER_GROUP) : members;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-hairline pb-3">
+        <div>
+          <h2 className="text-xl font-semibold text-primary">
+            {group.title}{" "}
+            <span className="font-mono text-muted">· {members.length}</span>
+          </h2>
+          <p className="mt-1 text-muted">{group.blurb}</p>
+        </div>
+        {isNone && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="text-muted underline-offset-4 hover:text-secondary hover:underline"
+          >
+            {expanded ? "collapse" : "expand"}
+          </button>
+        )}
+      </div>
+
+      {shown.map((p) => (
+        <PatternRow key={p.pattern_id} pattern={p} onInvestigate={() => onOpen(p)} />
+      ))}
+
+      {rest.length > 0 && (
+        <div className="divide-y divide-hairline rounded-lg border border-hairline">
+          {rest.map((p) => (
+            <button
+              key={p.pattern_id}
+              onClick={() => onOpen(p)}
+              className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left hover:bg-surface-2"
+            >
+              <span className="min-w-0 flex-1 truncate text-secondary">{p.title}</span>
+              <span className="font-mono text-muted">{p.size} traces</span>
+              <span className="text-ok">Investigate →</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function PatternRow({ pattern, onInvestigate }: { pattern: PatternCard; onInvestigate: () => void }) {
   return (
     <Card
       title={pattern.title}
       subtitle={pattern.signature}
       right={
-        <Badge tone={pattern.discovered_by === "anomaly-only" ? "accent" : "info"} dot>
-          {pattern.discovered_by === "anomaly-only" ? "anomaly only" : "signal + anomaly"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {pattern.verdict && (
+            <Badge tone={pattern.verdict === "failure" ? "danger" : "ok"} dot>
+              {pattern.verdict === "failure" ? "failure" : "expected"}
+            </Badge>
+          )}
+          <Badge tone={pattern.discovered_by === "anomaly-only" ? "accent" : "info"}>
+            {pattern.discovered_by === "anomaly-only" ? "anomaly only" : "signal + anomaly"}
+          </Badge>
+        </div>
       }
       footer={
         <div className="flex flex-wrap items-center justify-between gap-4">

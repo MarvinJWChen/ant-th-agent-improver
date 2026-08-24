@@ -106,20 +106,21 @@ def get_trace(trace_id: str):
 # ------------------------------------------------------------------ discovery
 
 
+def _discovery(force: bool) -> dict:
+    real = devdata.try_real_discovery(force=force)
+    if real is None:
+        return devdata.discovery()
+    return services.annotate(real)
+
+
 @app.post("/api/discovery/run")
 def run_discovery(force: bool = False):
-    real = devdata.try_real_discovery(force=force)
-    if real is not None:
-        return real
-    return devdata.discovery()
+    return _discovery(force)
 
 
 @app.get("/api/discovery")
 def get_discovery():
-    real = devdata.try_real_discovery(force=False)
-    if real is not None:
-        return real
-    return devdata.discovery()
+    return _discovery(False)
 
 
 @app.get("/api/patterns/{pattern_id}")

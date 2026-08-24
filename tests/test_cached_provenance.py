@@ -139,3 +139,35 @@ def test_whole_journey_works_with_no_api_key(monkeypatch):
 
     # ...and live mode is refused rather than silently falling back to a capture.
     assert client.post(f"/api/patterns/{pid}/diagnose", params={"mode": "live"}).status_code == 409
+
+
+def test_every_pattern_still_has_a_verified_diagnosis_capture():
+    """Guards the failure mode that adding one contract field caused.
+
+    Capture provenance hashes the task's inputs. Anything that widens those
+    inputs — even a presentational field annotated back onto a pattern card —
+    changes the hash and silently invalidates every capture, which shows up as
+    the demo falling back to fixtures. This asserts the committed captures still
+    match what the code would ask for today.
+    """
+    from apps.api import services
+    from apps.api.detect import pipeline
+
+    if not any(paths_captures().glob("diagnose_pattern/*.json")):
+        pytest.skip("no captures committed")
+
+    stale = []
+    for p in pipeline.discover().patterns:
+        res = services.diagnose(p.pattern_id, "captured")
+        if not res["provenance"]["verified"]:
+            stale.append((p.pattern_id, res["provenance"]["stale_reason"]))
+
+    assert not stale, "captures no longer match the current execution: " + "; ".join(
+        f"{pid}: {reason}" for pid, reason in stale
+    )
+
+
+def paths_captures():
+    from apps.api import paths
+
+    return paths.CAPTURES

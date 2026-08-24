@@ -58,7 +58,16 @@ def _pattern_inputs(pattern_id: str) -> dict[str, Any]:
         store.get_trace(t).model_dump()
         for t in pattern.exemplar_trace_ids[:EXEMPLARS]
     ]
-    return {"pattern": pattern.model_dump(), "config": cfg, "traces": traces}
+    # `verdict` and `remediation_kind` are *outputs* of the diagnosis, annotated
+    # back onto the card afterwards. Feeding them in would be circular, and —
+    # because the inputs are hashed for provenance — would also invalidate every
+    # existing capture the moment the annotation was added. Anything that is not
+    # a genuine input to the prompt stays out of here.
+    return {
+        "pattern": pattern.model_dump(exclude={"verdict"}),
+        "config": cfg,
+        "traces": traces,
+    }
 
 
 def _fixture_provenance(task: str, mode: str, reason: str) -> Provenance:
@@ -252,3 +261,50 @@ def patch(pattern_id: str, mode: str) -> dict[str, Any]:
             "label": c["label"],
         })
     return {"candidates": candidates, "provenance": prov.model_dump()}
+
+
+_KIND_CACHE: dict[str, dict[str, dict[str, str]]] = {}
+
+
+def captured_verdicts() -> dict[str, dict[str, str]]:
+    """Verdict and remediation kind per pattern, read only from verified captures.
+
+    Discovery stays free of any inference: this looks up what a previous
+    diagnosis concluded and returns nothing for patterns that have never been
+    diagnosed. It never falls back to a fixture, because an unverified guess
+    shown as a category label would be worse than an empty one.
+    """
+    key = store.corpus_hash()
+    if key in _KIND_CACHE:
+        return _KIND_CACHE[key]
+
+    _, cfg_hash, t_hash, corpus_hash = _hashes()
+    out: dict[str, dict[str, str]] = {}
+    for p in pipeline.discover().patterns:
+        try:
+            inputs = _pattern_inputs(p.pattern_id)
+            res, prov = runner.run(
+                "diagnose_pattern", inputs, "captured",
+                agent_config_hash=cfg_hash, tools_hash=t_hash, corpus_hash=corpus_hash,
+            )
+        except (runner.NoCaptureAvailable, KeyError):
+            continue
+        if not prov.verified:
+            continue
+        out[p.pattern_id] = {
+            "verdict": res.get("verdict", "failure"),
+            "remediation_kind": res["remediation_kind"],
+        }
+    _KIND_CACHE[key] = out
+    return out
+
+
+def annotate(discovery: dict) -> dict:
+    """Attach captured verdicts to the discovery result for the pattern list."""
+    kinds = captured_verdicts()
+    for p in discovery.get("patterns", []):
+        k = kinds.get(p["pattern_id"])
+        if k:
+            p["verdict"] = k["verdict"]
+            p["remediation_kind"] = k["remediation_kind"]
+    return discovery

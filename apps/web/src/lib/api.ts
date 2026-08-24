@@ -100,6 +100,7 @@ export interface PatternCard {
   share_of_flagged: number;
   discovered_by: "evaluator+anomaly" | "anomaly-only";
   remediation_kind?: RemediationKind | null;
+  verdict?: "failure" | "expected_behaviour" | null;
   top_features: string[];
   exemplar_trace_ids: string[];
   representative_evidence: string[];
