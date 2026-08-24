@@ -7,7 +7,7 @@
  */
 
 export type Mode = "captured" | "live";
-export type RemediationKind = "config" | "code" | "process";
+export type RemediationKind = "config" | "code" | "process" | "none";
 
 export interface ToolDef {
   name: string;
@@ -135,6 +135,7 @@ export interface Provenance {
 
 export interface Diagnosis {
   pattern_id: string;
+  verdict: "failure" | "expected_behaviour";
   root_cause: string;
   mechanism: string;
   why_it_recurs: string;
@@ -185,6 +186,8 @@ export interface ProposalResponse {
   } | null;
   config?: ConfigPatch | null;
   provenance: Provenance;
+  verdict?: "failure" | "expected_behaviour";
+  explanation?: string;
 }
 
 export interface LedgerRow {

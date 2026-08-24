@@ -77,13 +77,43 @@ def diagnose(pattern_id: str, mode: str) -> dict[str, Any]:
     }
 
 
+def stable_diagnosis(pattern_id: str, mode: str) -> dict[str, Any]:
+    """The diagnosis a downstream task is built on must not move underneath it.
+
+    A proposal's provenance hashes its inputs, and the diagnosis is one of them.
+    If we re-ran the diagnosis live every time, each run would produce slightly
+    different wording, the inputs hash would change, and the proposal captured
+    against it could never validate again. So downstream tasks always read the
+    captured diagnosis when one exists, and only fall back to the requested mode
+    when there is nothing to read.
+    """
+    captured = diagnose(pattern_id, "captured")
+    if captured["provenance"]["verified"]:
+        return captured
+    return diagnose(pattern_id, mode)
+
+
 def propose(pattern_id: str, mode: str) -> dict[str, Any]:
     """Remediation kind comes from the diagnosis, not from the clusterer."""
-    diag = diagnose(pattern_id, mode)
+    diag = stable_diagnosis(pattern_id, mode)
     kind = diag["diagnosis"]["remediation_kind"]
     inputs = _pattern_inputs(pattern_id)
     _, cfg_hash, t_hash, corpus_hash = _hashes()
     base = {"diagnosis": diag["diagnosis"], "config": inputs["config"]}
+
+    if kind == "none":
+        # The diagnosis judged this cluster to be correct behaviour. There is
+        # nothing to propose, and inventing a remediation would be worse than
+        # saying so.
+        return {
+            "kind": "none",
+            "code": None,
+            "process": None,
+            "config": None,
+            "provenance": diag["provenance"],
+            "verdict": diag["diagnosis"].get("verdict", "expected_behaviour"),
+            "explanation": diag["diagnosis"]["remediation_summary"],
+        }
 
     task = {
         "code": "propose_code_change",
@@ -119,7 +149,7 @@ def propose(pattern_id: str, mode: str) -> dict[str, Any]:
 
 def patch(pattern_id: str, mode: str) -> dict[str, Any]:
     """Generate candidate configs and register the in-bounds ones as versions."""
-    diag = diagnose(pattern_id, mode)
+    diag = stable_diagnosis(pattern_id, mode)
     inputs = _pattern_inputs(pattern_id)
     cfg, cfg_hash, t_hash, corpus_hash = _hashes()
     try:

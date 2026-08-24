@@ -152,7 +152,21 @@ export function PatternDetail() {
         {diag.error && <p className="mt-3 text-xs text-danger">{diag.error}</p>}
         {d && (
           <div className="mt-4 space-y-3">
-            <Field label="Root cause" body={d.root_cause} />
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={d.verdict === "failure" ? "danger" : "ok"} dot>
+                {d.verdict === "failure" ? "real failure" : "expected behaviour"}
+              </Badge>
+              <Badge tone="neutral" mono>{d.remediation_kind}</Badge>
+              <Badge tone="neutral">{d.confidence} confidence</Badge>
+            </div>
+            {d.verdict === "expected_behaviour" && (
+              <p className="rounded border border-ok/40 bg-ok/5 p-3 text-sm leading-relaxed text-secondary">
+                The clustering step groups traces by behaviour — it cannot tell a problem from a rare but
+                correct one. This cluster was judged correct, so nothing is proposed for it. A system that
+                produced a remediation for every cluster would be manufacturing work.
+              </p>
+            )}
+            <Field label={d.verdict === "failure" ? "Root cause" : "What this cluster is"} body={d.root_cause} />
             <Field label="Mechanism" body={d.mechanism} />
             <Field label="Why it recurs" body={d.why_it_recurs} />
             <KeyValue
@@ -167,7 +181,7 @@ export function PatternDetail() {
         )}
       </Card>
 
-      {d && kind === "config" && (
+      {d && d.verdict === "failure" && kind === "config" && (
         <Card
           title="Generate a configuration patch"
           subtitle="Prompt and tool-description edits only. Anything touching tool names or schemas is rejected before it can become a candidate."
@@ -224,7 +238,7 @@ export function PatternDetail() {
         </Card>
       )}
 
-      {d && kind !== "config" && (
+      {d && d.verdict === "failure" && kind !== "config" && kind !== "none" && (
         <Card
           title="This one cannot be fixed by configuration"
           subtitle={d.remediation_summary}

@@ -30,15 +30,16 @@ def _obj(props: dict[str, Any], required: list[str]) -> dict[str, Any]:
 
 DIAGNOSE_SCHEMA = _obj(
     {
+        "verdict": {"type": "string", "enum": ["failure", "expected_behaviour"]},
         "root_cause": _S,
         "mechanism": _S,
         "why_it_recurs": _S,
         "cited_trace_ids": _SL,
         "confidence": {"type": "string", "enum": ["low", "medium", "high"]},
-        "remediation_kind": {"type": "string", "enum": ["config", "code", "process"]},
+        "remediation_kind": {"type": "string", "enum": ["code", "process", "config", "none"]},
         "remediation_summary": _S,
     },
-    ["root_cause", "mechanism", "why_it_recurs", "cited_trace_ids", "confidence",
+    ["verdict", "root_cause", "mechanism", "why_it_recurs", "cited_trace_ids", "confidence",
      "remediation_kind", "remediation_summary"],
 )
 
@@ -101,8 +102,8 @@ class Task:
 
 _ANALYST_SYSTEM = (
     "You are a staff engineer doing incident analysis on a production LLM agent. "
-    "You are given a cluster of real traces that a detection pipeline flagged as a "
-    "recurring failure, plus the agent's current configuration.\n\n"
+    "You are given a cluster of real traces that a detection pipeline flagged as "
+    "worth investigating, plus the agent's current configuration.\n\n"
     "Work only from the evidence supplied. Cite specific trace ids. Do not invent "
     "traces, tools, metrics, or code you were not shown. If the evidence is thin, "
     "say so through the confidence field rather than padding the analysis.\n\n"
@@ -153,19 +154,35 @@ def _render_pattern(p: dict[str, Any]) -> str:
 
 def _diagnose_build(inp: dict[str, Any]) -> tuple[str, str]:
     user = (
-        "## Discovered failure pattern\n\n"
+        "## Discovered behaviour cluster\n\n"
         + _render_pattern(inp["pattern"])
         + "\n\n## Agent configuration currently in production\n\n"
         + _render_config(inp["config"])
         + "\n\n## Example traces from this cluster\n\n"
         + _render_traces(inp["traces"])
         + "\n\n## Task\n\n"
-        "Diagnose this pattern. Identify the root cause in the configuration or tool "
-        "contract, describe the mechanism step by step, explain why it recurs rather "
-        "than being a one-off, and classify the remediation as `config` (fixable by "
-        "editing the system prompt or tool descriptions), `code` (requires changing a "
-        "tool's implementation), or `process` (requires an operational or "
-        "organisational change)."
+        "The clustering step groups traces by behaviour. It has no idea whether a "
+        "cluster is a problem — that judgement is yours.\n\n"
+        "**First decide `verdict`.** Some clusters are simply uncommon but correct: "
+        "the agent did the right thing and the behaviour merely looks unusual next to "
+        "the bulk of traffic. If that is what you are looking at, answer "
+        "`expected_behaviour`, set `remediation_kind` to `none`, and use the other "
+        "fields to explain why the behaviour is correct. Do not invent a defect to "
+        "have something to report.\n\n"
+        "If it is a genuine `failure`, describe the mechanism step by step, explain "
+        "why it recurs rather than being a one-off, and choose the remediation that "
+        "would actually remove it:\n\n"
+        "- `code` — a tool's implementation or contract is itself unsafe, so no "
+        "instruction to the agent can make it correct. The clearest case is an "
+        "operation that cannot be retried safely.\n"
+        "- `process` — the agent behaved reasonably given what it was told, and the "
+        "fix is operational: information it was never given, an upstream reliability "
+        "problem, or a policy that does not exist yet.\n"
+        "- `config` — the agent had everything it needed, and the failure comes from "
+        "ambiguous or missing wording in the system prompt or a tool description. "
+        "Choose this only when rewording genuinely removes the failure.\n\n"
+        "Judge each of these on its merits. Do not assume the answer is `config` "
+        "because that is the easiest thing to change."
     )
     return _ANALYST_SYSTEM, user
 
@@ -241,7 +258,7 @@ def _process_build(inp: dict[str, Any]) -> tuple[str, str]:
 
 
 TASKS: dict[str, Task] = {
-    "diagnose_pattern": Task("diagnose_pattern", "2026-08-24.1", DIAGNOSE_SCHEMA, _diagnose_build),
+    "diagnose_pattern": Task("diagnose_pattern", "2026-08-24.2", DIAGNOSE_SCHEMA, _diagnose_build),
     "propose_config_patch": Task("propose_config_patch", "2026-08-24.1", PATCH_SCHEMA, _patch_build),
     "propose_code_change": Task("propose_code_change", "2026-08-24.1", CODE_SCHEMA, _code_build),
     "propose_process_change": Task("propose_process_change", "2026-08-24.1", PROCESS_SCHEMA, _process_build),

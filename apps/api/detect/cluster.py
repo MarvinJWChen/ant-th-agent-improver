@@ -120,9 +120,13 @@ def describe(
         return {t: c / n for t, c in counts.items()}
 
     fin, fout = token_freq(idx), token_freq(others) if len(others) else {}
+    # Tie-break on the token itself. Without it, equally distinctive tokens are
+    # ordered by dict insertion, which follows set iteration order and therefore
+    # varies between processes — enough to change a pattern's signature text and
+    # invalidate every capture keyed on it.
     distinctive = sorted(
         ((t, f - fout.get(t, 0.0)) for t, f in fin.items() if f >= 0.6),
-        key=lambda kv: -kv[1],
+        key=lambda kv: (-kv[1], kv[0]),
     )[:3]
 
     sig_parts = [_token_phrase(t) for t, _ in distinctive]

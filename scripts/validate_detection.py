@@ -72,6 +72,38 @@ def check_no_leakage() -> list[str]:
     return failures
 
 
+def check_input_determinism() -> list[str]:
+    """Capture inputs must hash identically in a *fresh process*.
+
+    Python randomises string hashing per process, so anything whose order comes
+    from set or dict iteration can differ between runs. That is invisible in a
+    single process and silently invalidates every capture, so it is checked here
+    by actually launching a second interpreter.
+    """
+    snippet = (
+        "from apps.api import services;"
+        "from apps.api.llm.capture import sha;"
+        "from apps.api.detect import pipeline;"
+        "print(' '.join(sha(services._pattern_inputs(p.pattern_id))[:16]"
+        " for p in pipeline.discover().patterns))"
+    )
+    outs = []
+    for _ in range(2):
+        r = subprocess.run(
+            [sys.executable, "-c", snippet], capture_output=True, text=True, cwd=ROOT
+        )
+        if r.returncode != 0:
+            return [f"determinism probe failed: {r.stderr[-400:]}"]
+        outs.append(r.stdout.strip().splitlines()[-1])
+    if outs[0] != outs[1]:
+        return [
+            "capture inputs are not deterministic across processes — "
+            "captures will not validate:\n"
+            f"  run 1: {outs[0]}\n  run 2: {outs[1]}"
+        ]
+    return []
+
+
 def main() -> int:
     if not store.corpus_available() or not LABELS_DB.exists():
         print("No corpus. Run: uv run python -m scripts.seed --fresh")
@@ -87,6 +119,15 @@ def main() -> int:
             print(f"   FAIL {line}")
     else:
         print("   ok — no runtime module references or can reach the labels")
+
+    print("\n1b. capture-input determinism (fresh processes)")
+    det = check_input_determinism()
+    if det:
+        problems.extend(det)
+        for line in det:
+            print(f"   FAIL {line}")
+    else:
+        print("   ok — pattern inputs hash identically in separate processes")
 
     labels = load_labels()
     disc = pipeline.discover(force=True)

@@ -67,6 +67,15 @@ function ProposalCard({ patternId, title, liveOK }: { patternId: string; title: 
       />
       {prop.error && <p className="mt-3 text-xs text-danger">{prop.error}</p>}
 
+      {r?.kind === "none" && (
+        <div className="mt-4 rounded border border-ok/40 bg-ok/5 p-3">
+          <div className="mb-1 text-sm font-medium text-primary">No remediation proposed</div>
+          <p className="text-xs leading-relaxed text-secondary">
+            {r.explanation ?? "The diagnosis judged this cluster to be correct behaviour."}
+          </p>
+        </div>
+      )}
+
       {r?.code && (
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-relaxed text-secondary">{r.code.rationale}</p>

@@ -11,7 +11,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 Mode = Literal["captured", "live"]
-Family = Literal["config", "code", "process"]
+Family = Literal["config", "code", "process", "none"]
 Disposition = Literal[
     "READ_FROM_CLONE",
     "APPLIED_TO_CLONE",
@@ -163,6 +163,7 @@ class Provenance(BaseModel):
 
 class Diagnosis(BaseModel):
     pattern_id: str
+    verdict: Literal["failure", "expected_behaviour"] = "failure"
     root_cause: str
     mechanism: str
     why_it_recurs: str

@@ -58,7 +58,11 @@ def capture_patch(pattern_id: str) -> list[str]:
     return versions
 
 
-def capture_counterfactuals(pattern_id: str, versions: list[str], size: int) -> None:
+def capture_counterfactuals(pattern_id: str, versions: list[str], size: int, workers: int = 6) -> None:
+    """Each run is an independent agent loop against its own clone, so they
+    parallelise cleanly. The work is almost entirely waiting on the API."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     target, control = engine.build_cohorts(pattern_id, size)
     ids = target + control
     for version in versions:
@@ -73,12 +77,10 @@ def capture_counterfactuals(pattern_id: str, versions: list[str], size: int) -> 
         cfg_hash, t_hash = ch(cfg["model"], cfg["system_prompt"], tools), th(tools)
         corpus_hash = store.corpus_hash()
         run_id = f"capture_{version}"
-        done = 0
-        for tid in ids:
-            trace = store.get_trace(tid)
-            world_hash = cap.sha_text("placeholder")
-            from apps.api.replay import world as world_mod
+        from apps.api.replay import world as world_mod
 
+        def one(tid: str) -> str:
+            trace = store.get_trace(tid)
             world_hash = world_mod.sha256_file(world_mod.paths.world_path(tid))
             key = cf.capture_key(
                 trace, {**cfg, "tools": tools},
@@ -86,14 +88,38 @@ def capture_counterfactuals(pattern_id: str, versions: list[str], size: int) -> 
                 corpus_hash=corpus_hash, world_hash=world_hash,
             )
             if cap.load_exact(key) is not None:
-                done += 1
-                continue
+                return f"cached {tid}"
             t0 = time.time()
-            _, _, payload = cf.run_candidate_live(trace, run_id, {**cfg, "tools": tools})
+            try:
+                _, outcome, payload = cf.run_candidate_live(
+                    trace, run_id, {**cfg, "tools": tools}
+                )
+            except Exception as e:  # noqa: BLE001 - one bad run must not sink the batch
+                return f"FAILED {tid}: {type(e).__name__}: {str(e)[:120]}"
             cap.save(key, payload, notes=f"Live counterfactual run for {version}.")
-            done += 1
-            print(f"  ✓ {version} {tid}  ({time.time() - t0:.1f}s)  [{done}/{len(ids)}]")
-        print(f"  → {version}: {done} counterfactual runs captured")
+            fails = ",".join(outcome.failure_labels()) or "clean"
+            return f"{tid} {fails} ({time.time() - t0:.1f}s)"
+
+        done = 0
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {pool.submit(one, tid): tid for tid in ids}
+            for fut in as_completed(futures):
+                done += 1
+                print(f"  [{done}/{len(ids)}] {fut.result()}", flush=True)
+        print(f"  → {version}: {done} counterfactual runs captured", flush=True)
+
+
+def captured_kinds() -> list[tuple[str, str]]:
+    """Read the remediation kind each captured diagnosis settled on."""
+    out = []
+    for p in pipeline.discover().patterns:
+        try:
+            res = services.diagnose(p.pattern_id, "captured")
+        except Exception:  # noqa: BLE001
+            continue
+        if res["provenance"].get("verified"):
+            out.append((p.pattern_id, res["diagnosis"]["remediation_kind"]))
+    return out
 
 
 def main() -> None:
@@ -101,6 +127,7 @@ def main() -> None:
     ap.add_argument("stage", choices=["diagnoses", "proposals", "patch", "counterfactuals", "all"])
     ap.add_argument("--pattern", default=None, help="pattern id for patch/counterfactual stages")
     ap.add_argument("--size", type=int, default=12, help="cohort size per arm")
+    ap.add_argument("--workers", type=int, default=6, help="parallel agent runs")
     args = ap.parse_args()
     _require_key()
 
@@ -119,6 +146,9 @@ def main() -> None:
             kinds = [(p.pattern_id, "") for p in disc.patterns]
         capture_proposals(kinds)
 
+    if not kinds:
+        kinds = captured_kinds()
+
     target = args.pattern
     if target is None and kinds:
         target = next((pid for pid, k in kinds if k == "config"), disc.patterns[0].pattern_id)
@@ -134,7 +164,7 @@ def main() -> None:
                 c.version for c in store.list_configs() if c.version.startswith("v2-candidate")
             ]
         print(f"Capturing counterfactual runs for {versions} on {target}…")
-        capture_counterfactuals(target, versions, args.size)
+        capture_counterfactuals(target, versions, args.size, args.workers)
 
     n = len(list((cap.paths.CAPTURES).glob("*/*.json")))
     print(f"\nDone. {n} capture artifacts under fixtures/captures/")
