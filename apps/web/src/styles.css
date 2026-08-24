@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — Agent Improver
+ * Channel triplets (R G B) so Tailwind can apply opacity modifiers,
+ * e.g. `bg-ok/10`, `border-accent/40`. See tailwind.config.js for the
+ * mapping from these vars to Tailwind color utilities.
+ */
+:root {
+  color-scheme: dark;
+
+  /* surfaces — 3 elevations, near-black */
+  --color-surface-0: 8 9 11; /* app canvas */
+  --color-surface-1: 13 15 19; /* shell chrome: topbar, stepper, panels */
+  --color-surface-2: 19 22 28; /* cards, raised content */
+
+  /* hairline borders */
+  --color-hairline: 34 38 46;
+  --color-hairline-strong: 51 56 66;
+
+  /* text */
+  --color-text-primary: 228 231 236;
+  --color-text-secondary: 162 168 179;
+  --color-text-muted: 100 107 119;
+
+  /* accent — cool blue/violet, interactive elements */
+  --color-accent: 129 140 248;
+  --color-accent-hover: 154 164 250;
+  --color-accent-muted: 99 102 241;
+
+  /* semantic */
+  --color-ok: 52 199 129;
+  --color-warn: 234 165 46;
+  --color-danger: 240 96 96;
+  --color-info: 71 176 240;
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--color-hairline));
+  }
+
+  html {
+    @apply bg-surface-0;
+  }
+
+  body {
+    @apply bg-surface-0 text-primary antialiased;
+    font-family: theme("fontFamily.sans");
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: rgb(var(--color-accent) / 0.35);
+    color: rgb(var(--color-text-primary));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* thin, unobtrusive scrollbars for dense panels */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-hairline-strong)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--color-hairline-strong));
+    border-radius: 999px;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

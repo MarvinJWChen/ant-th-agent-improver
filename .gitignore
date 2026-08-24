@@ -1,0 +1,24 @@
+# runtime state
+var/
+*.sqlite
+*.db
+
+# secrets — never commit
+.env
+.env.*
+*.key
+.anthropic_key
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# node
+node_modules/
+apps/web/dist/
+
+# misc
+.DS_Store

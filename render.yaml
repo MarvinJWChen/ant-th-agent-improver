@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: agent-improver
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      # Set this in the Render dashboard. Never committed.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AGENT_IMPROVER_VAR
+        value: /app/var
