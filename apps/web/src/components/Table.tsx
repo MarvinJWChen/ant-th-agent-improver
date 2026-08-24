@@ -79,12 +79,12 @@ export function Table<T>({
     }
   }
 
-  const rowPad = dense ? "py-1.5" : "py-2.5";
+  const rowPad = dense ? "py-2.5" : "py-3.5";
 
   return (
     <div
       className={cn(
-        "scrollbar-thin overflow-auto rounded-md border border-hairline",
+        "scrollbar-thin overflow-auto rounded-lg border border-hairline",
         maxHeightClassName,
         className,
       )}
@@ -100,10 +100,10 @@ export function Table<T>({
                   style={col.width ? { width: col.width } : undefined}
                   aria-sort={isSorted ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
                   className={cn(
-                    "border-b border-hairline bg-surface-1 px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted",
+                    "border-b border-hairline-strong bg-surface-1 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-secondary",
                     stickyHeader && "sticky top-0 z-10",
                     col.numeric && "text-right",
-                    col.sortable && "cursor-pointer select-none hover:text-secondary",
+                    col.sortable && "cursor-pointer select-none hover:text-primary",
                   )}
                   onClick={() => toggleSort(col)}
                 >
@@ -123,7 +123,7 @@ export function Table<T>({
         <tbody>
           {sortedRows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-3 py-8 text-center text-xs text-muted">
+              <td colSpan={columns.length} className="px-4 py-10 text-center text-sm text-muted">
                 {emptyMessage}
               </td>
             </tr>
@@ -148,7 +148,7 @@ export function Table<T>({
                       : undefined
                   }
                   className={cn(
-                    "border-b border-hairline last:border-b-0",
+                    "border-b border-hairline/60 last:border-b-0",
                     clickable && "cursor-pointer hover:bg-surface-1 focus-visible:bg-surface-1",
                   )}
                 >
@@ -156,7 +156,7 @@ export function Table<T>({
                     <td
                       key={col.key}
                       className={cn(
-                        "px-3 text-primary",
+                        "px-4 text-sm text-primary",
                         rowPad,
                         col.numeric && "text-right font-mono tabular-nums",
                         col.className,

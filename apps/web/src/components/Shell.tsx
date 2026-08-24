@@ -54,15 +54,15 @@ export function Shell({
 
   return (
     <div className={cn("flex min-h-screen flex-col bg-surface-0", className)}>
-      <header className="sticky top-0 z-20 flex h-13 shrink-0 items-center justify-between gap-4 border-b border-hairline bg-surface-1 px-4">
+      <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-hairline bg-surface-1 px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="text-sm font-semibold tracking-tight text-primary">{productName}</span>
+          <span className="text-base font-semibold tracking-tight text-primary">{productName}</span>
           {agentName && (
             <>
               <span className="text-hairline-strong" aria-hidden>
                 /
               </span>
-              <span className="truncate font-mono text-xs text-secondary">{agentName}</span>
+              <span className="truncate font-mono text-sm text-secondary">{agentName}</span>
             </>
           )}
         </div>
@@ -73,7 +73,7 @@ export function Shell({
         currentStepId={resolvedStepId}
         statuses={stepStatuses}
         activePatternId={resolvedPatternId}
-        className="sticky top-13 z-10"
+        className="sticky top-16 z-10"
       />
 
       <main className="min-w-0 flex-1">{children}</main>

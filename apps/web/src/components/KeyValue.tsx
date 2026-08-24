@@ -22,8 +22,7 @@ export function KeyValue({ items, className, columns = 1 }: KeyValueProps) {
   return (
     <dl
       className={cn(
-        "text-sm",
-        columns === 2 ? "grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2" : "flex flex-col divide-y divide-hairline",
+        columns === 2 ? "grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2" : "flex flex-col divide-y divide-hairline",
         className,
       )}
     >
@@ -36,14 +35,14 @@ export function KeyValue({ items, className, columns = 1 }: KeyValueProps) {
           <div
             key={item.key}
             className={cn(
-              "flex items-baseline justify-between gap-4 py-1.5",
+              "flex items-baseline justify-between gap-4 py-2.5",
               columns === 1 && "first:pt-0 last:pb-0",
             )}
           >
             <dt className="shrink-0 text-xs text-muted">{item.label}</dt>
             <dd
               className={cn(
-                "min-w-0 truncate text-right text-primary",
+                "min-w-0 truncate text-right text-sm text-primary",
                 item.mono !== false && "font-mono",
               )}
               title={typeof item.value === "string" ? item.value : undefined}

@@ -33,18 +33,18 @@ function deltaTone(delta: StatTileDelta): "ok" | "danger" | "neutral" {
 
 export function StatTile({ label, value, sublabel, delta, className }: StatTileProps) {
   return (
-    <div className={cn("rounded-md border border-hairline bg-surface-2 px-4 py-3", className)}>
-      <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-1.5 flex items-baseline gap-2">
-        <span className="font-mono text-2xl font-semibold text-primary">{value}</span>
+    <div className={cn("rounded-lg border border-hairline bg-surface-2 px-5 py-4", className)}>
+      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-2 flex items-baseline gap-2.5">
+        <span className="font-mono text-3xl font-semibold tracking-tight text-primary">{value}</span>
         {delta && (
-          <span className={cn("inline-flex items-center gap-1 font-mono text-xs", TONE[deltaTone(delta)].text)}>
+          <span className={cn("inline-flex items-center gap-1 font-mono text-sm", TONE[deltaTone(delta)].text)}>
             <span aria-hidden>{ARROW[delta.direction]}</span>
             {delta.value}
           </span>
         )}
       </div>
-      {sublabel && <div className="mt-1 text-xs text-secondary">{sublabel}</div>}
+      {sublabel && <div className="mt-1.5 text-sm text-secondary">{sublabel}</div>}
     </div>
   );
 }

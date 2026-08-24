@@ -122,5 +122,11 @@ def test_live_mode_refuses_without_a_key(client, monkeypatch):
 def test_spa_deep_links_do_not_404(client):
     if not (store.paths.WEB_DIST / "index.html").exists():
         pytest.skip("SPA not built")
-    for path in ("/", "/discovery", "/patterns/P1", "/replay/P1", "/proposals"):
+    for path in (
+        "/",
+        "/agents/support-refund-agent",
+        "/discovery",
+        "/patterns/P1",
+        "/patterns/P1/improve",
+    ):
         assert client.get(path).status_code == 200, f"{path} must serve the SPA shell"

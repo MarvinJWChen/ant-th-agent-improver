@@ -45,18 +45,28 @@ export default {
         ],
       },
       fontSize: {
-        xs: ["0.6875rem", { lineHeight: "1rem" }],
-        sm: ["0.75rem", { lineHeight: "1.1rem" }],
-        base: ["0.8125rem", { lineHeight: "1.25rem" }],
-        md: ["0.875rem", { lineHeight: "1.35rem" }],
-        lg: ["1rem", { lineHeight: "1.5rem" }],
-        xl: ["1.25rem", { lineHeight: "1.6rem" }],
-        "2xl": ["1.75rem", { lineHeight: "2rem" }],
+        // tiny uppercase labels (badges, table headers, KeyValue keys)
+        xs: ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.02em" }],
+        // table cells, monospace identifiers/hashes — smallest "readable" tier
+        sm: ["0.8125rem", { lineHeight: "1.25rem" }],
+        // body/prose default
+        base: ["0.9375rem", { lineHeight: "1.5rem" }],
+        // larger body / lg button label
+        md: ["1rem", { lineHeight: "1.5rem" }],
+        lg: ["1.125rem", { lineHeight: "1.75rem" }],
+        // section headings (~20-24px)
+        xl: ["1.375rem", { lineHeight: "1.85rem" }],
+        "2xl": ["1.625rem", { lineHeight: "2rem" }],
+        // page titles (~28-32px) and hero numbers (StatTile, gate verdict)
+        "3xl": ["1.875rem", { lineHeight: "2.25rem" }],
+        "4xl": ["2.25rem", { lineHeight: "2.5rem" }],
       },
       spacing: {
         4.5: "1.125rem",
         13: "3.25rem",
+        14: "3.5rem",
         15: "3.75rem",
+        18: "4.5rem",
       },
       borderRadius: {
         sm: "3px",

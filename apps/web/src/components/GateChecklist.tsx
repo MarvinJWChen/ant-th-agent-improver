@@ -44,11 +44,30 @@ export function GateChecklist({ checks, verdict, title = "Promotion gate", class
   const passCount = checks.filter((c) => c.status === "pass").length;
 
   return (
-    <div className={cn("overflow-hidden rounded-md border border-hairline bg-surface-2", className)}>
-      <div className="flex items-center justify-between gap-3 border-b border-hairline px-4 py-3">
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted">{title}</div>
-          <div className={cn("mt-0.5 text-sm font-semibold", TONE[vm.tone].text)}>{vm.label}</div>
+    <div className={cn("overflow-hidden rounded-lg border border-hairline bg-surface-2", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-between gap-4 border-b px-6 py-5",
+          TONE[vm.tone].bg,
+          TONE[vm.tone].border,
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg font-semibold",
+              TONE[vm.tone].bg,
+              TONE[vm.tone].border,
+              TONE[vm.tone].text,
+            )}
+            aria-hidden
+          >
+            {resolved === "pass" ? "✓" : resolved === "fail" ? "✕" : "…"}
+          </span>
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wide text-muted">{title}</div>
+            <div className={cn("text-2xl font-semibold tracking-tight", TONE[vm.tone].text)}>{vm.label}</div>
+          </div>
         </div>
         <Badge tone={vm.tone} mono>
           {passCount}/{checks.length} passed
@@ -58,10 +77,10 @@ export function GateChecklist({ checks, verdict, title = "Promotion gate", class
         {checks.map((check) => {
           const meta = STATUS_META[check.status];
           return (
-            <li key={check.id} className="flex items-start gap-3 px-4 py-2.5">
+            <li key={check.id} className="flex items-start gap-4 px-6 py-4">
               <span
                 className={cn(
-                  "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border font-mono text-[10px]",
+                  "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-xs",
                   TONE[meta.tone].bg,
                   TONE[meta.tone].border,
                   TONE[meta.tone].text,
@@ -71,8 +90,8 @@ export function GateChecklist({ checks, verdict, title = "Promotion gate", class
                 {meta.glyph}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-sm text-primary">{check.label}</div>
-                {check.detail && <div className="mt-0.5 truncate text-xs text-muted">{check.detail}</div>}
+                <div className="text-base text-primary">{check.label}</div>
+                {check.detail && <div className="mt-1 text-sm text-secondary">{check.detail}</div>}
               </div>
             </li>
           );

@@ -24,9 +24,11 @@ export interface ToneClasses {
 
 export const TONE: Record<Tone, ToneClasses> = {
   neutral: {
-    text: "text-secondary",
-    bg: "bg-surface-2",
-    border: "border-hairline-strong",
+    // deliberately quiet — semantic tones (ok/warn/danger/info/accent) should
+    // carry the visual weight; neutral chips should nearly disappear.
+    text: "text-muted",
+    bg: "bg-transparent",
+    border: "border-hairline",
     dot: "bg-muted",
     solidBg: "bg-surface-2",
     onSolid: "text-primary",

@@ -14,12 +14,12 @@ export interface CodeBlockProps {
 export function CodeBlock({ code, filename, language, className, maxHeightClassName }: CodeBlockProps) {
   const hasHeader = !!filename || !!language;
   return (
-    <div className={cn("overflow-hidden rounded-md border border-hairline bg-surface-2", className)}>
+    <div className={cn("overflow-hidden rounded-lg border border-hairline bg-surface-2", className)}>
       {hasHeader && (
-        <div className="flex items-center justify-between gap-2 border-b border-hairline px-3 py-1.5">
-          {filename && <span className="truncate font-mono text-xs text-secondary">{filename}</span>}
+        <div className="flex items-center justify-between gap-2 border-b border-hairline px-4 py-2.5">
+          {filename && <span className="truncate font-mono text-sm text-secondary">{filename}</span>}
           {language && (
-            <span className="shrink-0 font-mono text-[10px] uppercase tracking-wide text-muted">
+            <span className="shrink-0 font-mono text-xs uppercase tracking-wide text-muted">
               {language}
             </span>
           )}
@@ -27,7 +27,7 @@ export function CodeBlock({ code, filename, language, className, maxHeightClassN
       )}
       <pre
         className={cn(
-          "scrollbar-thin overflow-x-auto p-3 font-mono text-xs leading-relaxed text-primary",
+          "scrollbar-thin overflow-x-auto p-4 font-mono text-sm leading-relaxed text-primary",
           maxHeightClassName && cn("overflow-y-auto", maxHeightClassName),
         )}
       >

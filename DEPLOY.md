@@ -21,7 +21,7 @@ lockfiles are committed. Render builds the image itself — no local Docker need
 ## Verifying the deploy
 
 ```bash
-BASE=https://<your-service>.onrender.com
+BASE=https://agent-improver.onrender.com
 curl -s $BASE/api/health           # all five subsystems must say "real"
 curl -s $BASE/api/agent | grep -o '"total_traces":[0-9]*'
 curl -s -o /dev/null -w '%{http_code}\n' $BASE/discovery   # SPA deep link → 200

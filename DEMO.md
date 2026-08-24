@@ -15,9 +15,17 @@ whole journey works with no key at all — that is the point of the captures.
 
 ---
 
-## 1 — Overview
+## 0 — Agents
 
-*"This is a managed customer-support refund agent and every trace it has produced."*
+Landing screen lists the managed agents this workspace watches. Click into
+`support-refund-agent`.
+
+*"This is an agent already running in production. We're not building it — we're
+looking at how it has actually behaved."*
+
+## 1 — Agent overview
+
+*"Every trace this agent has produced."*
 
 1,000 traces. ~84% self-resolved. Point at the tool table: **every tool declares
 a blast radius.** `refund_execute` and `send_email` are `external` — they move
@@ -46,7 +54,7 @@ families, weighted cluster purity 0.88.**
 
 > **Investigate →** on the escalation pattern
 
-## 3 — Diagnose
+## 3 — Investigate
 
 Expand an exemplar trace — real recorded events, real tool payloads.
 
@@ -66,11 +74,13 @@ Those are escalations *after* a genuine SLA breach, and the system says so
 instead of inventing a defect. Clustering finds behaviours; deciding which are
 problems is a separate judgement.
 
-> **Show captured patch** → two candidates, then **Replay →**
+> **Improve this pattern →**
 
-## 4 — Replay & gate
+## 4 — Improve (replay & gate)
 
-Run the **broad** candidate first. It fixes the target failure — and the gate
+Every pattern has exactly one Improve destination, and the diagnosis decides what
+it is. This one is config-remediable, so Improve is patch → replay → gate →
+promote. **Show captured patch**, then evaluate the **broad** candidate first. It fixes the target failure — and the gate
 **blocks it**, naming the control traces it broke.
 
 Then the **surgical** candidate. All four checks green, Promote enables.
@@ -87,11 +97,12 @@ What to point at:
 
 > **Promote** → config version bumps
 
-## 5 — Proposals
+## 5 — Improve, for a pattern configuration cannot fix
 
-The other two patterns cannot be fixed by configuration, so they are not
-auto-applied. One is a code change (unified diff adding an idempotency key to
-the email tool); one is a process change with owners and metrics.
+Go back to Discovery and investigate the email-timeout pattern. Its diagnosis
+returns `code`, so its Improve step is a written proposal instead: a unified diff
+adding an idempotency key to the email tool. Another pattern returns `process`,
+with owners and metrics.
 
 *"A patch that only changes what the agent is told can be proven against a
 frozen world. A change to tool code or to an on-call process cannot, so
@@ -100,6 +111,11 @@ promoting it automatically would be claiming evidence we don't have."*
 ---
 
 ## If someone asks
+
+**"43% of traces were flagged — is the agent really that broken?"** No. That is
+a high-recall review queue, not a failure count: both signals are tuned to miss
+nothing, and separating real failures from rare-but-correct behaviour is what the
+clustering and diagnosis do next. Three of the six clusters are failures.
 
 **"Is the clustering real or did you hardcode three patterns?"** Hit *Re-run
 detection*. It recomputes. Also `scripts/validate_detection.py` grades it

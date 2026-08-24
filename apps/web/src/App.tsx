@@ -1,18 +1,18 @@
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Shell } from "./components";
+import { Agents } from "./views/Agents";
 import { Overview } from "./views/Overview";
 import { Discovery } from "./views/Discovery";
-import { PatternDetail } from "./views/PatternDetail";
-import { Replay } from "./views/Replay";
-import { Proposals } from "./views/Proposals";
+import { Investigate } from "./views/Investigate";
+import { Improve } from "./views/Improve";
 import { Kit } from "./views/Kit";
 import { JourneyProvider, useJourney } from "./lib/state";
-import { derivePatternIdFromPath } from "./lib/journey";
+import { DEFAULT_AGENT_ID, derivePatternIdFromPath } from "./lib/journey";
 
 function NotFound() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <p className="text-sm text-muted">Route not found.</p>
+    <div className="mx-auto max-w-5xl px-6 py-16">
+      <p className="text-muted">Route not found.</p>
     </div>
   );
 }
@@ -21,29 +21,39 @@ function Inner() {
   const journey = useJourney();
   const loc = useLocation();
   const patternId = derivePatternIdFromPath(loc.pathname) ?? journey.activePatternId;
+  const onLanding = loc.pathname === "/";
 
   return (
     <Shell
-      agentName="support-refund-agent"
+      agentName={onLanding ? undefined : DEFAULT_AGENT_ID}
       activePatternId={patternId}
       stepStatuses={journey.stepStatuses}
       rightSlot={
-        <span className="font-mono text-[11px] text-muted">
+        <span className="font-mono text-muted">
           {journey.promotedVersion ? `active: ${journey.promotedVersion}` : "active: v1"}
         </span>
       }
     >
       <Routes>
-        <Route path="/" element={<Overview />} />
+        <Route path="/" element={<Agents />} />
+        <Route path="/agents/:agentId" element={<Overview />} />
         <Route path="/discovery" element={<Discovery />} />
-        <Route path="/patterns/:patternId" element={<PatternDetail />} />
-        <Route path="/replay/:patternId" element={<Replay />} />
-        <Route path="/proposals" element={<Proposals />} />
+        <Route path="/patterns/:patternId" element={<Investigate />} />
+        <Route path="/patterns/:patternId/improve" element={<Improve />} />
+        {/* old routes, kept so a stale tab or bookmark still lands somewhere sane */}
+        <Route path="/replay/:patternId" element={<RedirectToImprove />} />
+        <Route path="/proposals" element={<Navigate to="/discovery" replace />} />
         <Route path="/kit" element={<Kit />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Shell>
   );
+}
+
+function RedirectToImprove() {
+  const loc = useLocation();
+  const id = derivePatternIdFromPath(loc.pathname.replace("/replay/", "/patterns/"));
+  return <Navigate to={id ? `/patterns/${id}/improve` : "/discovery"} replace />;
 }
 
 export default function App() {

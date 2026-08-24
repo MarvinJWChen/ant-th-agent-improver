@@ -83,25 +83,25 @@ export function DiffView({ diff, filename, className }: DiffViewProps) {
   const lines = useMemo(() => parseDiff(diff), [diff]);
 
   return (
-    <div className={cn("overflow-hidden rounded-md border border-hairline bg-surface-2", className)}>
+    <div className={cn("overflow-hidden rounded-lg border border-hairline bg-surface-2", className)}>
       {filename && (
-        <div className="border-b border-hairline bg-surface-1 px-3 py-1.5 font-mono text-xs text-secondary">
+        <div className="border-b border-hairline bg-surface-1 px-4 py-2.5 font-mono text-sm text-secondary">
           {filename}
         </div>
       )}
       <div className="scrollbar-thin overflow-x-auto">
-        <table className="w-full min-w-max border-collapse font-mono text-xs">
+        <table className="w-full min-w-max border-collapse font-mono text-sm">
           <tbody>
             {lines.map((line, i) => (
               <tr key={i} className={ROW_TONE[line.kind]}>
-                <td className="w-10 select-none whitespace-nowrap px-2 py-0.5 text-right text-muted/70">
+                <td className="w-12 select-none whitespace-nowrap px-2 py-1 text-right text-muted/70">
                   {line.oldLine ?? ""}
                 </td>
-                <td className="w-10 select-none whitespace-nowrap px-2 py-0.5 text-right text-muted/70">
+                <td className="w-12 select-none whitespace-nowrap px-2 py-1 text-right text-muted/70">
                   {line.newLine ?? ""}
                 </td>
-                <td className="w-4 select-none px-1 py-0.5 text-center text-muted/70">{SIGN[line.kind]}</td>
-                <td className="whitespace-pre px-2 py-0.5">{line.content}</td>
+                <td className="w-5 select-none px-1 py-1 text-center text-muted/70">{SIGN[line.kind]}</td>
+                <td className="whitespace-pre px-2 py-1">{line.content}</td>
               </tr>
             ))}
           </tbody>

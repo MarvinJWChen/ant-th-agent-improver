@@ -47,7 +47,7 @@
   }
 
   body {
-    @apply bg-surface-0 text-primary antialiased;
+    @apply bg-surface-0 text-base leading-relaxed text-primary antialiased;
     font-family: theme("fontFamily.sans");
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;

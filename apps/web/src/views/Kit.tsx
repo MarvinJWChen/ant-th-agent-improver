@@ -185,11 +185,11 @@ export function Kit() {
 
       <GallerySection title="JourneyStepper" description="4 states: completed / current / upcoming / locked">
         <div className="flex flex-col gap-3 overflow-hidden rounded-md border border-hairline">
-          <JourneyStepper currentStepId="diagnose" activePatternId="pat_001" />
+          <JourneyStepper currentStepId="investigate" activePatternId="pat_001" />
           <JourneyStepper
-            currentStepId="replay"
+            currentStepId="improve"
             activePatternId="pat_001"
-            statuses={{ overview: "completed", discovery: "completed", diagnose: "completed", replay: "current", proposals: "locked" }}
+            statuses={{ agents: "completed", overview: "completed", discovery: "completed", investigate: "completed", improve: "current" }}
           />
         </div>
       </GallerySection>

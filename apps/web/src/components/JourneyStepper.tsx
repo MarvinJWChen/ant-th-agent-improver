@@ -18,20 +18,20 @@ export interface JourneyStepperProps {
   className?: string;
 }
 
-const CIRCLE_BASE = "flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-mono text-[11px]";
+const CIRCLE_BASE = "flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-sm";
 
 const CIRCLE_STATUS: Record<JourneyStepStatus, string> = {
   completed: "bg-ok/10 text-ok border border-ok/30",
   current: "bg-accent text-surface-0 border border-accent",
   upcoming: "bg-surface-2 text-muted border border-hairline-strong",
-  locked: "bg-surface-2 text-muted/60 border border-hairline",
+  locked: "bg-surface-2 text-muted/50 border border-hairline",
 };
 
 const STEP_BUTTON_STATUS: Record<JourneyStepStatus, string> = {
   completed: "text-secondary hover:text-primary hover:bg-surface-2",
   current: "text-primary bg-surface-2/70 shadow-[inset_0_-2px_0_0_rgb(var(--color-accent))]",
   upcoming: "text-muted",
-  locked: "text-muted/60",
+  locked: "text-muted/50",
 };
 
 /**
@@ -50,7 +50,7 @@ export function JourneyStepper({ currentStepId, statuses, activePatternId, class
 
   return (
     <nav aria-label="Improvement journey" className={cn("border-b border-hairline bg-surface-1", className)}>
-      <ol className="scrollbar-thin flex items-center overflow-x-auto px-4">
+      <ol className="scrollbar-thin flex items-center overflow-x-auto px-6">
         {JOURNEY_STEPS.map((step, i) => {
           const status = statusOf(step.id);
           const clickable = status === "completed" || status === "current";
@@ -60,7 +60,7 @@ export function JourneyStepper({ currentStepId, statuses, activePatternId, class
           return (
             <Fragment key={step.id}>
               {i > 0 && (
-                <li aria-hidden className="mx-1 h-px min-w-[16px] flex-1">
+                <li aria-hidden className="mx-2 h-px min-w-[24px] flex-1">
                   <div className={cn("h-px w-full", prevCompleted ? "bg-ok/40" : "bg-hairline")} />
                 </li>
               )}
@@ -70,8 +70,9 @@ export function JourneyStepper({ currentStepId, statuses, activePatternId, class
                   disabled={!clickable}
                   aria-current={status === "current" ? "step" : undefined}
                   onClick={() => clickable && navigate(path)}
+                  title={status === "locked" ? `${step.label} — not available yet` : undefined}
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium",
+                    "inline-flex items-center gap-3 rounded-md px-4 py-3.5 text-left",
                     "transition-colors duration-120 disabled:cursor-not-allowed",
                     clickable && "cursor-pointer",
                     STEP_BUTTON_STATUS[status],
@@ -80,12 +81,17 @@ export function JourneyStepper({ currentStepId, statuses, activePatternId, class
                   <span className={cn(CIRCLE_BASE, CIRCLE_STATUS[status])} aria-hidden>
                     {status === "completed" ? "✓" : step.index}
                   </span>
-                  <span className="whitespace-nowrap">{step.label}</span>
-                  {status === "locked" && (
-                    <span className="text-muted/60" aria-hidden>
-                      🔒
+                  <span className="flex flex-col gap-0.5">
+                    <span className="flex items-center gap-1.5 whitespace-nowrap text-base font-medium">
+                      {step.label}
+                      {status === "locked" && (
+                        <span className="text-muted/50" aria-hidden>
+                          🔒
+                        </span>
+                      )}
                     </span>
-                  )}
+                    <span className="hidden whitespace-nowrap text-xs text-muted lg:block">{step.hint}</span>
+                  </span>
                 </button>
               </li>
             </Fragment>

@@ -1,76 +1,79 @@
 /**
- * The 5-step improvement journey that drives the top-of-app stepper.
- * Overview -> Discovery -> Diagnose -> Replay & Gate -> Proposals
+ * The improvement journey that drives the top-of-app stepper.
  *
- * This module is the single source of truth for step order, labels, and
- * routing so views and the Shell/JourneyStepper stay in sync. The lead
- * engineer drives *state* (which step is current/locked) via props on
- * <Shell> / <JourneyStepper> — this file only defines the static shape.
+ *   Agents → Agent → Discover → Investigate → Improve
+ *
+ * Step 5 is deliberately a single destination per pattern. A pattern is either
+ * fixable by configuration — in which case Improve is replay, gate and promote —
+ * or it is not, in which case Improve is a written proposal. Splitting those
+ * into separate top-level views left people unable to find the replay step, and
+ * showed every pattern's remediation on one page.
  */
 
 export type JourneyStepId =
+  | "agents"
   | "overview"
   | "discovery"
-  | "diagnose"
-  | "replay"
-  | "proposals";
+  | "investigate"
+  | "improve";
 
 export type JourneyStepStatus = "completed" | "current" | "upcoming" | "locked";
 
 export interface JourneyStepDef {
-  /** stable identifier */
   id: JourneyStepId;
   /** 1-based position in the journey */
   index: number;
   /** label shown in the stepper */
   label: string;
-  /**
-   * Route to navigate to when this step is clicked. Steps 3 and 4
-   * (diagnose/replay) are parameterized by the pattern under investigation;
-   * pass the currently active pattern id via `resolveStepPath` /
-   * <JourneyStepper activePatternId>. Falls back to Discovery when no
-   * pattern id is available yet.
-   */
+  /** one-line hint shown under the label on wider screens */
+  hint: string;
+  /** route to navigate to; steps 4 and 5 need the pattern under investigation */
   path: string | ((patternId?: string) => string);
-  /** does this pathname belong to this step? used to auto-derive "current" */
   matches: (pathname: string) => boolean;
 }
 
+export const DEFAULT_AGENT_ID = "support-refund-agent";
+
 export const JOURNEY_STEPS: JourneyStepDef[] = [
   {
-    id: "overview",
+    id: "agents",
     index: 1,
-    label: "Overview",
+    label: "Agents",
+    hint: "pick a managed agent",
     path: "/",
     matches: (p) => p === "/",
   },
   {
-    id: "discovery",
+    id: "overview",
     index: 2,
-    label: "Discovery",
+    label: "Agent",
+    hint: "traces and configuration",
+    path: `/agents/${DEFAULT_AGENT_ID}`,
+    matches: (p) => p.startsWith("/agents/"),
+  },
+  {
+    id: "discovery",
+    index: 3,
+    label: "Discover",
+    hint: "recurring patterns",
     path: "/discovery",
     matches: (p) => p === "/discovery",
   },
   {
-    id: "diagnose",
-    index: 3,
-    label: "Diagnose",
-    path: (patternId) => (patternId ? `/patterns/${patternId}` : "/discovery"),
-    matches: (p) => p.startsWith("/patterns/"),
-  },
-  {
-    id: "replay",
+    id: "investigate",
     index: 4,
-    label: "Replay & Gate",
-    path: (patternId) => (patternId ? `/replay/${patternId}` : "/discovery"),
-    matches: (p) => p.startsWith("/replay/"),
+    label: "Investigate",
+    hint: "evidence and diagnosis",
+    path: (patternId) => (patternId ? `/patterns/${patternId}` : "/discovery"),
+    matches: (p) => /^\/patterns\/[^/]+$/.test(p),
   },
   {
-    id: "proposals",
+    id: "improve",
     index: 5,
-    label: "Proposals",
-    path: "/proposals",
-    matches: (p) => p === "/proposals",
+    label: "Improve",
+    hint: "evaluate and promote",
+    path: (patternId) => (patternId ? `/patterns/${patternId}/improve` : "/discovery"),
+    matches: (p) => /^\/patterns\/[^/]+\/improve$/.test(p),
   },
 ];
 
@@ -78,18 +81,10 @@ export function resolveStepPath(step: JourneyStepDef, patternId?: string): strin
   return typeof step.path === "function" ? step.path(patternId) : step.path;
 }
 
-/** Find the journey step whose route matches the given pathname, if any. */
 export function findStepByPath(pathname: string): JourneyStepDef | undefined {
   return JOURNEY_STEPS.find((step) => step.matches(pathname));
 }
 
-/**
- * Default status for a step given the current step's index — used when the
- * caller doesn't explicitly override a step's status. Steps before the
- * current one are "completed", the current one is "current", everything
- * after is "upcoming". Nothing is ever defaulted to "locked" — that's an
- * explicit, data-driven decision the lead makes via `stepStatuses`.
- */
 export function defaultStepStatus(
   step: JourneyStepDef,
   currentIndex: number,
@@ -99,8 +94,7 @@ export function defaultStepStatus(
   return "upcoming";
 }
 
-/** Extract a `:patternId`-shaped segment from /patterns/:id or /replay/:id. */
+/** Extract the `:patternId` segment from /patterns/:id or /patterns/:id/improve. */
 export function derivePatternIdFromPath(pathname: string): string | undefined {
-  const match = /^\/(?:patterns|replay)\/([^/]+)/.exec(pathname);
-  return match?.[1];
+  return /^\/patterns\/([^/]+)/.exec(pathname)?.[1];
 }

@@ -53,7 +53,7 @@ export function ProvenanceBadge({
         aria-expanded={hasDetail ? expanded : undefined}
         disabled={!hasDetail}
         className={cn(
-          "inline-flex items-center gap-1.5 rounded border border-hairline bg-surface-2 px-2 py-1 font-mono text-xs transition-colors duration-120",
+          "inline-flex items-center gap-2 rounded-md border border-hairline bg-surface-2 px-2.5 py-1.5 font-mono text-sm transition-colors duration-120",
           hasDetail ? "cursor-pointer hover:border-hairline-strong" : "cursor-default",
         )}
       >
@@ -68,7 +68,7 @@ export function ProvenanceBadge({
         )}
       </button>
       {expanded && hasDetail && (
-        <div className="mt-1.5 rounded border border-hairline bg-surface-2 p-2.5">
+        <div className="mt-2 rounded-md border border-hairline bg-surface-2 p-3">
           <KeyValue
             items={hashes!.map((h) => ({ key: h.label, label: h.label, value: h.value, truncateMiddle: true }))}
           />

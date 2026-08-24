@@ -51,13 +51,16 @@ function PayloadDisclosure({ id, payload, defaultExpanded }: { id: string; paylo
   const [expanded, setExpanded] = useState(defaultExpanded);
   const domId = `timeline-payload-${id}`;
   return (
-    <div className="mt-1.5">
+    <div className="mt-2">
       <button
         type="button"
         aria-expanded={expanded}
         aria-controls={domId}
         onClick={() => setExpanded((e) => !e)}
-        className="inline-flex items-center gap-1 text-xs text-muted hover:text-secondary"
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded border border-hairline bg-surface-1 px-2 py-1 text-xs font-medium text-secondary",
+          "transition-colors duration-120 hover:border-hairline-strong hover:text-primary",
+        )}
       >
         <span aria-hidden>{expanded ? "▴" : "▾"}</span>
         {expanded ? "Hide payload" : "Show payload"}
@@ -65,7 +68,7 @@ function PayloadDisclosure({ id, payload, defaultExpanded }: { id: string; paylo
       {expanded && (
         <pre
           id={domId}
-          className="scrollbar-thin mt-1.5 overflow-x-auto rounded border border-hairline bg-surface-1 p-2 font-mono text-xs text-secondary"
+          className="scrollbar-thin mt-2 overflow-x-auto rounded-md border border-hairline bg-surface-1 p-3 font-mono text-sm text-secondary"
         >
           <code>{payload}</code>
         </pre>
@@ -85,17 +88,17 @@ export function Timeline({ items, className }: TimelineProps) {
           <li
             key={item.id}
             className={cn(
-              "relative flex gap-3 pl-1 pr-2",
-              item.highlight && "-ml-2 rounded border-l-2 border-accent bg-accent/5 pl-3",
+              "relative flex gap-4 pl-1 pr-2",
+              item.highlight && "-ml-3 rounded-md border-l-2 border-accent bg-accent/5 pl-4",
               item.dim && "opacity-45",
             )}
           >
-            <div className="relative flex w-6 shrink-0 flex-col items-center">
+            <div className="relative flex w-7 shrink-0 flex-col items-center">
               {i > 0 && <span className="absolute top-0 h-1/2 w-px bg-hairline" aria-hidden />}
               {!isLast && <span className="absolute bottom-0 h-1/2 w-px bg-hairline" aria-hidden />}
               <span
                 className={cn(
-                  "relative z-10 mt-1 flex h-5 w-5 items-center justify-center rounded-full border font-mono text-[10px]",
+                  "relative z-10 mt-1.5 flex h-6 w-6 items-center justify-center rounded-full border font-mono text-xs",
                   TONE[meta.tone].bg,
                   TONE[meta.tone].border,
                   TONE[meta.tone].text,
@@ -105,13 +108,13 @@ export function Timeline({ items, className }: TimelineProps) {
                 {meta.glyph}
               </span>
             </div>
-            <div className="min-w-0 flex-1 pb-4">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1 pb-6">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <span className="font-mono text-xs text-muted">#{item.seq}</span>
                 <Badge tone={meta.tone} mono>
                   {meta.label}
                 </Badge>
-                <span className="truncate text-sm text-primary">{item.title}</span>
+                <span className="truncate text-base text-primary">{item.title}</span>
                 {item.latencyMs != null && (
                   <Badge tone={item.latencyMs >= 2000 ? "warn" : "neutral"} mono>
                     {item.latencyMs}ms

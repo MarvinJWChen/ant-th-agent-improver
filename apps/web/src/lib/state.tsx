@@ -67,13 +67,12 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const stepStatuses = useMemo(() => {
     const out: Partial<Record<JourneyStepId, JourneyStepStatus>> = {};
     if (!state.discovered) {
-      out.diagnose = "locked";
-      out.replay = "locked";
-      out.proposals = "locked";
+      out.investigate = "locked";
+      out.improve = "locked";
     } else if (state.diagnosed.length === 0) {
-      out.replay = "locked";
-    } else if (state.patched.length === 0) {
-      out.replay = "locked";
+      // Improve needs a diagnosis first: the diagnosis is what decides whether
+      // this pattern is fixable by configuration or only by a written proposal.
+      out.improve = "locked";
     }
     return out;
   }, [state]);

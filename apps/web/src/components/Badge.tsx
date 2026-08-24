@@ -19,11 +19,11 @@ export function Badge({ tone = "neutral", dot = false, mono = false, className, 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-xs leading-none",
+        "inline-flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium leading-none",
         t.bg,
         t.border,
         t.text,
-        mono && "font-mono",
+        mono && "font-mono font-normal",
         className,
       )}
     >
