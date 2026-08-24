@@ -131,7 +131,7 @@ function PatternRow({ pattern, onInvestigate }: { pattern: PatternCard; onInvest
           <span className="font-mono text-muted">
             {pattern.size} traces · {pct(Number(pattern.impact.share_of_corpus ?? 0), 1)} of corpus
           </span>
-          <Button size="lg" onClick={onInvestigate}>
+          <Button size="lg" variant="progress" onClick={onInvestigate}>
             Investigate →
           </Button>
         </div>

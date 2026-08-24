@@ -154,7 +154,7 @@ export function Investigate() {
             </>
           ) : (
             <>
-              <Button size="lg" onClick={() => nav(`/patterns/${patternId}/improve`)}>
+              <Button size="lg" variant="progress" onClick={() => nav(`/patterns/${patternId}/improve`)}>
                 Improve this pattern →
               </Button>
               <p className="text-muted">

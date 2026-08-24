@@ -46,7 +46,7 @@ export function Agents() {
         }
         subtitle={`${data.active_config.model} · configuration ${data.active_config.version} · ${data.active_config.tools.length} tools`}
         right={
-          <Button size="lg" onClick={open}>
+          <Button size="lg" variant="progress" onClick={open}>
             Open agent →
           </Button>
         }

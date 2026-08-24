@@ -2,7 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "../lib/utils";
 import { Spinner } from "./Spinner";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "progress" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps
@@ -27,6 +27,11 @@ const VARIANT: Record<ButtonVariant, string> = {
   ghost: "bg-transparent text-secondary hover:bg-surface-2 hover:text-primary active:bg-surface-1",
   danger:
     "bg-danger text-surface-0 font-semibold shadow-sm shadow-danger/20 hover:brightness-110 active:brightness-95",
+  // Reserved for the one action that advances the journey on each screen, so
+  // "what do I click next" is answered by colour before anyone reads a label.
+  progress:
+    "bg-ok text-surface-0 font-semibold shadow-sm shadow-ok/25 " +
+    "hover:brightness-110 hover:shadow-md hover:shadow-ok/40 active:brightness-95",
 };
 
 const SIZE: Record<ButtonSize, string> = {

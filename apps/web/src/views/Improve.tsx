@@ -239,7 +239,7 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
             <div className="mt-6 flex flex-col items-start gap-3">
               <Button
                 size="lg"
-                variant={r.gate.promotable ? "primary" : "secondary"}
+                variant={r.gate.promotable ? "progress" : "secondary"}
                 disabled={!r.gate.promotable}
                 title={r.gate.promotable ? undefined : "The gate has not passed, so this candidate cannot be promoted."}
                 loading={promote.pending === "go"}

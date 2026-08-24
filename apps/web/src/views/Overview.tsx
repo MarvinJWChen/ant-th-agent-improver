@@ -34,6 +34,14 @@ export function Overview() {
   const c = data.corpus;
   const notResolved = c.total_traces - (c.outcome_counts.resolved ?? 0);
 
+  const runDiscovery = async () => {
+    const res = await discover.run("run", () => api.runDiscovery());
+    if (res) {
+      journey.mark({ discovered: true });
+      nav("/discovery");
+    }
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <SectionHeading
@@ -41,9 +49,19 @@ export function Overview() {
         title={data.agent_name}
         subtitle="Every conversation this agent has handled in production, as recorded."
         right={
-          <Badge tone="accent" mono dot>
-            {data.active_config.version}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge tone="accent" mono dot>
+              {data.active_config.version}
+            </Badge>
+            <Button
+              size="lg"
+              variant="progress"
+              loading={discover.pending === "run"}
+              onClick={runDiscovery}
+            >
+              Discover failure patterns →
+            </Button>
+          </div>
         }
       />
 
@@ -108,22 +126,10 @@ export function Overview() {
       </Card>
 
       <div className="flex flex-col items-start gap-3 border-t border-hairline pt-8">
-        <Button
-          size="lg"
-          loading={discover.pending === "run"}
-          onClick={async () => {
-            const res = await discover.run("run", () => api.runDiscovery());
-            if (res) {
-              journey.mark({ discovered: true });
-              nav("/discovery");
-            }
-          }}
-        >
-          Discover failure patterns →
-        </Button>
         <p className="text-muted">
-          Runs detection over all {c.total_traces.toLocaleString()} traces now — featurisation,
-          anomaly scoring and clustering. Nothing is precomputed.
+          <span className="text-secondary">Discover failure patterns</span> runs detection over all{" "}
+          {c.total_traces.toLocaleString()} traces on the spot — featurisation, anomaly scoring and
+          clustering. Nothing is precomputed.
         </p>
         {discover.error && <p className="text-danger">{discover.error}</p>}
         {health.data && (
