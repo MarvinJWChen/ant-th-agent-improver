@@ -39,7 +39,12 @@ def discover(force: bool = False) -> DiscoveryResult:
 
     # 2 — generic anomaly over the same features every trace has.
     matrix, _, _ = anomaly.build_matrix(feats)
-    scores, threshold = anomaly.score(matrix)
+    scores, threshold, components = anomaly.score(
+        matrix,
+        feats,
+        [t.outcome for t in traces],
+        [t.intent for t in traces],
+    )
 
     flagged_idx = [
         i
@@ -63,9 +68,8 @@ def discover(force: bool = False) -> DiscoveryResult:
                     rule_id=None,
                     label="Anomalous trace shape",
                     detail=(
-                        "Isolation score "
-                        f"{scores[i]:.3f} ≥ threshold {threshold:.3f} on generic features; "
-                        "no rule was involved."
+                        f"Anomaly score {scores[i]:.3f} ≥ threshold {threshold:.3f}. "
+                        f"Signal: {anomaly.explain(components, i)}. No rule was involved."
                     ),
                     score=round(float(scores[i]), 3),
                 )

@@ -14,7 +14,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from apps.api import devdata, paths, store
+from apps.api import devdata, paths, services, store
+from apps.api.replay import engine
 
 app = FastAPI(title="Agent Improver", version="0.1.0")
 
@@ -30,9 +31,9 @@ def _subsystems() -> dict[str, str]:
     return {
         "corpus": "real" if store.corpus_available() else "fixture",
         "discovery": "real" if devdata.has_real("discovery") else "fixture",
-        "llm_captured": "real" if devdata.has_real("llm") else "fixture",
-        "replay": "real" if devdata.has_real("replay") else "fixture",
-        "gate": "real" if devdata.has_real("gate") else "fixture",
+        "llm_captured": "real" if any(paths.CAPTURES.glob("*/*.json")) else "fixture",
+        "replay": "real" if store.corpus_available() else "fixture",
+        "gate": "real" if store.corpus_available() else "fixture",
     }
 
 
@@ -148,25 +149,37 @@ def get_pattern(pattern_id: str):
 # ------------------------------------------------------------------ LLM tasks
 
 
-@app.post("/api/patterns/{pattern_id}/diagnose")
-def diagnose(pattern_id: str, mode: Literal["captured", "live"] = "captured"):
+def _require_live(mode: str) -> None:
     if mode == "live" and not live_available():
         raise HTTPException(409, "Live inference unavailable: ANTHROPIC_API_KEY is not set.")
-    return devdata.diagnose(pattern_id, mode)
+
+
+def _llm(fn, fallback, *args):
+    """Real path when the corpus exists; development fixture otherwise."""
+    if not store.corpus_available():
+        return fallback(*args)
+    try:
+        return fn(*args)
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
+
+
+@app.post("/api/patterns/{pattern_id}/diagnose")
+def diagnose(pattern_id: str, mode: Literal["captured", "live"] = "captured"):
+    _require_live(mode)
+    return _llm(services.diagnose, devdata.diagnose, pattern_id, mode)
 
 
 @app.post("/api/patterns/{pattern_id}/propose")
 def propose(pattern_id: str, mode: Literal["captured", "live"] = "captured"):
-    if mode == "live" and not live_available():
-        raise HTTPException(409, "Live inference unavailable: ANTHROPIC_API_KEY is not set.")
-    return devdata.propose(pattern_id, mode)
+    _require_live(mode)
+    return _llm(services.propose, devdata.propose, pattern_id, mode)
 
 
 @app.post("/api/patterns/{pattern_id}/patch")
 def patch(pattern_id: str, mode: Literal["captured", "live"] = "captured"):
-    if mode == "live" and not live_available():
-        raise HTTPException(409, "Live inference unavailable: ANTHROPIC_API_KEY is not set.")
-    return devdata.patch(pattern_id, mode)
+    _require_live(mode)
+    return _llm(services.patch, devdata.patch, pattern_id, mode)
 
 
 # ------------------------------------------------------------------ replay
@@ -177,14 +190,24 @@ def replay_run(
     pattern_id: str,
     candidate_version: str,
     mode: Literal["captured", "live"] = "captured",
+    size: int = 12,
 ):
-    if mode == "live" and not live_available():
-        raise HTTPException(409, "Live inference unavailable: ANTHROPIC_API_KEY is not set.")
-    return devdata.replay_run(pattern_id, candidate_version, mode)
+    _require_live(mode)
+    if not store.corpus_available():
+        return devdata.replay_run(pattern_id, candidate_version, mode)
+    try:
+        return engine.run_replay(pattern_id, candidate_version, mode, size).model_dump()
+    except engine.NoCandidateRun as e:
+        raise HTTPException(409, str(e)) from e
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
 
 
 @app.get("/api/replay/{run_id}")
 def replay_get(run_id: str):
+    run = engine.RUNS.get(run_id)
+    if run is not None:
+        return run.model_dump()
     res = devdata.replay_get(run_id)
     if res is None:
         raise HTTPException(404, f"no such replay run: {run_id}")
@@ -193,9 +216,7 @@ def replay_get(run_id: str):
 
 @app.get("/api/replay/{run_id}/pair/{trace_id}")
 def replay_pair(run_id: str, trace_id: str):
-    res = devdata.replay_get(run_id)
-    if res is None:
-        raise HTTPException(404, f"no such replay run: {run_id}")
+    res = replay_get(run_id)
     for p in res["pairs"]:
         if p["trace_id"] == trace_id:
             return p
@@ -204,6 +225,8 @@ def replay_pair(run_id: str, trace_id: str):
 
 @app.post("/api/replay/{run_id}/promote")
 def replay_promote(run_id: str):
+    if run_id in engine.RUNS:
+        return engine.promote(run_id)
     res = devdata.promote(run_id)
     if res is None:
         raise HTTPException(404, f"no such replay run: {run_id}")
