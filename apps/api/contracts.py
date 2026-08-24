@@ -12,7 +12,12 @@ from pydantic import BaseModel, Field
 
 Mode = Literal["captured", "live"]
 Family = Literal["config", "code", "process"]
-Disposition = Literal["APPLIED_TO_CLONE", "SHADOWED", "BLOCKED_UNKNOWN_EFFECT"]
+Disposition = Literal[
+    "READ_FROM_CLONE",
+    "APPLIED_TO_CLONE",
+    "SHADOWED",
+    "BLOCKED_UNKNOWN_EFFECT",
+]
 EffectClass = Literal["read", "shadow_write", "external", "unknown"]
 
 
@@ -117,7 +122,9 @@ class PatternCard(BaseModel):
     size: int
     share_of_flagged: float
     discovered_by: Literal["evaluator+anomaly", "anomaly-only"]
-    remediation_kind: Family
+    # Deliberately unset until an LLM diagnosis classifies it. The clusterer
+    # groups behaviour; it has no basis for asserting the kind of fix required.
+    remediation_kind: Family | None = None
     top_features: list[str]
     exemplar_trace_ids: list[str]
     representative_evidence: list[str]
