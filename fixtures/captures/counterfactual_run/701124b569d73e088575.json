@@ -1,0 +1,186 @@
+{
+  "envelope_version": 2,
+  "capture_id": "701124b569d73e088575",
+  "created_at": "2026-08-24T22:22:51Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "eb3b6a3218a72d60bd4e0b931183792c58f36074c3dc01cc307a378abcab9b2f",
+    "inputs_hash": "9ad23ac879bd3b54de545a82d07da42db00ada87c2fa186c00c89363859f8be9",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "e6385e7e15587abd35355c777467b8dd504c237559353aa2180bfbc2667504b1",
+    "tools_hash": "2fbedc1d7a26e482d323095b273742d14178a8ddcf140790bfe79a92c6a31c99",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "83d46c836f792ad32cbadb61aa36c1ea7a0970750eceebffb73dfc7e5cf8741e",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000639",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p1-a/candidate/tr_000639.sqlite",
+      "clone_sha256": "c8b25c30db1544fdd18bd420e57283b4bcb74234b34c2bcbaca45cc11363d9ba",
+      "clone_sha256_after": "64abf2c0a62fbda0f59fb7b6df1cb2469bbbe1801dfb0e1f5dc7a5969c3dd6b0",
+      "source_world_sha256": "c8b25c30db1544fdd18bd420e57283b4bcb74234b34c2bcbaca45cc11363d9ba",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up that order right now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10638"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10638",
+            "customer_id": "cus_0738",
+            "amount_cents": 45000,
+            "currency": "USD",
+            "placed_at": "2026-06-02T23:46:12Z",
+            "status": "shipped"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10638"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10638",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "Here's what I found: order ord_10638 ($450.00, placed June 2) has already moved to **shipped** status, so I'm not able to stop it before it goes out — and no refund has been started on it yet.\n\nSince cancellation isn't possible at this stage and I don't want to make a decision about your $450 without your input on how you'd like to proceed (returning it on arrival, refusing delivery, etc.), I'm passing this to a human teammate who can sort out the best option with you.",
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_call",
+          "tool_name": "escalate_to_human",
+          "args": {
+            "order_id": "ord_10638",
+            "reason": "Customer requested cancellation of ord_10638 before shipment, but order status is already 'shipped' and cancellation is not possible with available tools. No refund exists (state: none). Needs a human to arrange return/refuse-delivery or intercept the shipment for this $450.00 order (cus_0738)."
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "tool_result",
+          "tool_name": "escalate_to_human",
+          "args": null,
+          "result": {
+            "escalation_id": "esc_sim_a719717d",
+            "created": true,
+            "refund_state": "none"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 8,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "A human agent now has your case (reference **esc_sim_a719717d**) and will follow up with you directly to get this resolved — whether that's intercepting the package or setting up a return and refund for the full $450.00. You don't need to do anything in the meantime, and if the package arrives before you hear back, you can simply refuse delivery and it'll head straight back to us.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10638",
+          "args_digest": "b1ffc107b2bc",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10638",
+          "args_digest": "b1ffc107b2bc",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "escalate_to_human",
+          "effect_class": "shadow_write",
+          "target": "ord_10638",
+          "args_digest": "0f4ebe19bb32",
+          "disposition": "APPLIED_TO_CLONE",
+          "external": false,
+          "note": "Support escalation written to the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "escalated",
+      "turns": 3
+    },
+    "outcome": {
+      "trace_id": "tr_000639",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": true,
+      "turns": 3,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p1-a.",
+  "extra": {}
+}

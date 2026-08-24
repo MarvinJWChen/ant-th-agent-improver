@@ -1,0 +1,99 @@
+{
+  "envelope_version": 2,
+  "capture_id": "080df123a9b241b55d43",
+  "created_at": "2026-08-24T22:23:06Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "5fa2443e7ecf60314f74bb7e7c6b36c13cd7ad05374d0fd0148c165b417efe65",
+    "inputs_hash": "3afcdb998d62e134f2a287d3184a765dc67f4c158bccf184ef9ff18fab6ba7ae",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "918327d41a5ec21dcfdd0de71cd27d944b709847fd68a028e8b1312443802a55",
+    "tools_hash": "86e83a7d0b129311da5a9c411a31d5c53b4b17a4b19836d9fe385b901b3a3ac5",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "a4bf9037e27adfee4f6af20006ea0f4abcd5e31a3d44e11f8a67191492594c6a",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000101",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p1-b/candidate/tr_000101.sqlite",
+      "clone_sha256": "dc44760af3180ca9adaa195076cd45177d1ff797c77f4563b9806df5cb731a0f",
+      "clone_sha256_after": "dc44760af3180ca9adaa195076cd45177d1ff797c77f4563b9806df5cb731a0f",
+      "source_world_sha256": "dc44760af3180ca9adaa195076cd45177d1ff797c77f4563b9806df5cb731a0f",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10100"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10100",
+            "customer_id": "cus_0200",
+            "amount_cents": 9500,
+            "currency": "USD",
+            "placed_at": "2026-03-23T15:34:06Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I've got your order pulled up — **ord_10100**, $95.00, marked as delivered on March 23.\n\nWhat's going on with it? If you're looking for a refund, just say the word and I'll take care of it right away.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10100",
+          "args_digest": "1937c8e9757b",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 2
+    },
+    "outcome": {
+      "trace_id": "tr_000101",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 2,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p1-b.",
+  "extra": {}
+}

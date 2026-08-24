@@ -1,0 +1,108 @@
+{
+  "envelope_version": 2,
+  "capture_id": "04965af0adef58600d35",
+  "created_at": "2026-08-24T22:24:57Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "850d58616d6f48793a77c7d3dccdfb6ea70588a7513e892335e18f152743d4bc",
+    "inputs_hash": "50c787e7d8803db25ec702ab20706fcb52ad34dad556bc92314ed42a23afa119",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "b47242ca4468f2d62efbe2fe414c6d9205dababc967bae1577c62a4704e39a5a",
+    "tools_hash": "4230f9c5d5442528b6af75cb4effd3861a6dd03e1bbfe47252c38dad51bfa9d1",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "f1c98d351e9c3b350e0c9ce57808f03459d25c5ad049ef46e51b49b3625fe790",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000514",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p2-b/candidate/tr_000514.sqlite",
+      "clone_sha256": "00f7e5e4bdad4f434e09ab9d3d7c8bec67e8f55350444da5f1e581f9eee41b67",
+      "clone_sha256_after": "00f7e5e4bdad4f434e09ab9d3d7c8bec67e8f55350444da5f1e581f9eee41b67",
+      "source_world_sha256": "00f7e5e4bdad4f434e09ab9d3d7c8bec67e8f55350444da5f1e581f9eee41b67",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull that up for you right now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10513"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10513",
+            "customer_id": "cus_0613",
+            "amount_cents": 22500,
+            "currency": "USD",
+            "placed_at": "2026-04-27T18:49:05Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I've got your order in front of me:\n\n- **Order:** ord_10513\n- **Total:** $225.00 USD\n- **Placed:** April 27, 2026\n- **Status:** Delivered\n\nWhat's your question about it? If it's something like a return or refund, just let me know and I can look into that side of things for you too.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10513",
+          "args_digest": "f18f88b7a698",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 2
+    },
+    "outcome": {
+      "trace_id": "tr_000514",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 2,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p2-b.",
+  "extra": {}
+}

@@ -1,0 +1,149 @@
+{
+  "envelope_version": 2,
+  "capture_id": "3e9a5dac797ed31c3955",
+  "created_at": "2026-08-24T22:24:08Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "ae79304d6d32b923605d9f7e9cb44c3ff241e2f73414e9637105ba69b374086e",
+    "inputs_hash": "9a1856a8ed07144a944f70b3e5017f23cda6a34f4a8e01a971b82afed5271134",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "400a92e2f80be24da7bc59a1d7d9b322088ef260f5a5d302c3b132bd86ad29ee",
+    "tools_hash": "3501ffe04597727fc64cd46a726fb0669934a47410cec4acbe59fd2b589290a0",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "dd71a0194fefec84c949b400191a0c5142493180ecefe316cb6bbff2053fb161",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000009",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p2-a/candidate/tr_000009.sqlite",
+      "clone_sha256": "db59c7992f393e19e1033c52273de8f945e05d599e0a5e9806f883016ee53cb8",
+      "clone_sha256_after": "db59c7992f393e19e1033c52273de8f945e05d599e0a5e9806f883016ee53cb8",
+      "source_world_sha256": "db59c7992f393e19e1033c52273de8f945e05d599e0a5e9806f883016ee53cb8",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull that up for you now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10008"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10008",
+            "customer_id": "cus_0108",
+            "amount_cents": 27300,
+            "currency": "USD",
+            "placed_at": "2026-06-22T11:35:30Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10008"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10008",
+            "refund_id": "rfd_000007",
+            "state": "processing",
+            "amount_cents": 27300,
+            "requested_at": "2026-07-15T21:27:21Z",
+            "completed_at": null,
+            "processor_ref": null,
+            "hours_since_request": 19.9,
+            "sla_hours": 48,
+            "sla_breached": false
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "Here's exactly where things stand on order ord_10008 ($273.00, delivered):\n\n- A refund was created and is currently **processing** (refund ID rfd_000007) for the full $273.00.\n- It was requested about 20 hours ago, and our processing window for refunds is 48 hours — so it's still on track and not overdue.\n- No completion date has been posted yet, so I can't tell you it's landed. Once the payment processor finalizes it, funds typically take a few days to appear depending on your bank.\n\nNothing is stuck and there's nothing you need to do right now. If it hasn't completed after the 48-hour mark, write back and I'll get a human teammate on it right away.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10008",
+          "args_digest": "e1e185055482",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10008",
+          "args_digest": "e1e185055482",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 2
+    },
+    "outcome": {
+      "trace_id": "tr_000009",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 2,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p2-a.",
+  "extra": {}
+}

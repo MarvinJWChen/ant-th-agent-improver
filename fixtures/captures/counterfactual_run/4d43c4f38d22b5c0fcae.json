@@ -1,0 +1,177 @@
+{
+  "envelope_version": 2,
+  "capture_id": "4d43c4f38d22b5c0fcae",
+  "created_at": "2026-08-24T22:24:03Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "2ca0868cd7b83c6daf51ca60aeaf5cad35ecfc9910d03b4b02ec6ec5fa2cdbb5",
+    "inputs_hash": "58d6d43cd2cb2513d451f2a411b485a5c40d1c46990255e93a6c62e4c89c1fde",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "400a92e2f80be24da7bc59a1d7d9b322088ef260f5a5d302c3b132bd86ad29ee",
+    "tools_hash": "3501ffe04597727fc64cd46a726fb0669934a47410cec4acbe59fd2b589290a0",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "27899bbf6e4bd6143e85b8ef815dc90f3196a112f6ad0f6c18f206bf617de1be",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000434",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p2-a/candidate/tr_000434.sqlite",
+      "clone_sha256": "6b74a697c6177f0d0c0a3f449df24a75be860bf83e2ba12c57c0db2c354a251e",
+      "clone_sha256_after": "643e078863a83dc2fad132b89c01adbe68069bd6cf07807608387c6f92ef76a0",
+      "source_world_sha256": "6b74a697c6177f0d0c0a3f449df24a75be860bf83e2ba12c57c0db2c354a251e",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull that up for you now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10433"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10433",
+            "customer_id": "cus_0533",
+            "amount_cents": 27300,
+            "currency": "USD",
+            "placed_at": "2026-06-02T02:45:22Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10433"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10433",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "tool_call",
+          "tool_name": "escalate_to_human",
+          "args": {
+            "order_id": "ord_10433",
+            "reason": "Customer is checking in on a refund for ord_10433, but refund_status shows state \\\"none\\\" — no refund exists or is in flight. Order is marked delivered ($273.00, placed 2026-06-02). Unclear whether a refund was ever requested/approved or why the customer expects one, so I did not issue a payment. Human needs to confirm eligibility and next steps with the customer."
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_result",
+          "tool_name": "escalate_to_human",
+          "args": null,
+          "result": {
+            "escalation_id": "esc_sim_17f3ee1f",
+            "created": true,
+            "refund_state": "none"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "Thanks for checking in — here's exactly what I'm seeing:\n\n- **Order ord_10433** ($273.00, placed June 2) is marked **delivered**.\n- There is **no refund on file** for it right now — nothing has been issued, and nothing is currently in progress.\n\nI don't want to guess at why that is, so rather than leave you with a vague answer, I've passed this to a human teammate who can look into whether a refund was requested and get it sorted properly. They'll follow up with you directly.\n\nSorry for the runaround — you shouldn't have had to chase this.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10433",
+          "args_digest": "ffac15781254",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10433",
+          "args_digest": "ffac15781254",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "escalate_to_human",
+          "effect_class": "shadow_write",
+          "target": "ord_10433",
+          "args_digest": "75e9cafd0eeb",
+          "disposition": "APPLIED_TO_CLONE",
+          "external": false,
+          "note": "Support escalation written to the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "escalated",
+      "turns": 3
+    },
+    "outcome": {
+      "trace_id": "tr_000434",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": true,
+      "turns": 3,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p2-a.",
+  "extra": {}
+}

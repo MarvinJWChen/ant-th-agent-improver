@@ -1,0 +1,215 @@
+{
+  "envelope_version": 2,
+  "capture_id": "652771285e0e384184fc",
+  "created_at": "2026-08-24T22:23:06Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "8b165e0acad8d0fcaaa8a918f38e84bfe0029bf9140baf523284ab3ef2b9b68d",
+    "inputs_hash": "67dfc71ea451cd8aaa95e4facf58c3991767f46b94a3dc6a66b8cbc53640811e",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "918327d41a5ec21dcfdd0de71cd27d944b709847fd68a028e8b1312443802a55",
+    "tools_hash": "86e83a7d0b129311da5a9c411a31d5c53b4b17a4b19836d9fe385b901b3a3ac5",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "58cd017838177aaeb90cce9af24a2fefdf13c7f23edb2799c8c5a8648ed0e448",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000031",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p1-b/candidate/tr_000031.sqlite",
+      "clone_sha256": "dddd226b8a8d9b9f526d62cb11d81a26bc45073401096f32631013e365346574",
+      "clone_sha256_after": "da3190ae222dbb8631c5d4467416f901d8f406a1a9252d8fb192b5b62cec1845",
+      "source_world_sha256": "dddd226b8a8d9b9f526d62cb11d81a26bc45073401096f32631013e365346574",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up that order right now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10030"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10030",
+            "customer_id": "cus_0130",
+            "amount_cents": 20300,
+            "currency": "USD",
+            "placed_at": "2026-04-09T09:14:43Z",
+            "status": "cancelled"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10030"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10030",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "tool_call",
+          "tool_name": "refund_execute",
+          "args": {
+            "order_id": "ord_10030",
+            "amount_cents": 20300
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_result",
+          "tool_name": "refund_execute",
+          "args": null,
+          "result": {
+            "refund_id": "rf_sim_0d9d04f7",
+            "order_id": "ord_10030",
+            "state": "completed",
+            "simulated": true
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "tool_call",
+          "tool_name": "send_email",
+          "args": {
+            "customer_id": "cus_0130",
+            "template": "refund_confirmation",
+            "order_id": "ord_10030"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 8,
+          "kind": "tool_result",
+          "tool_name": "send_email",
+          "args": null,
+          "result": {
+            "email_id": "em_sim_32bd92d5",
+            "delivered": true,
+            "deduplicated": false,
+            "simulated": true
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 9,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I looked into this, and unfortunately order ord_10030 won't be arriving — it shows as **cancelled**, so nothing is on its way to you.\n\nI also saw that no refund had been issued for it yet, so I went ahead and processed one: **$203.00 USD** has been refunded to your original payment method. It typically takes a few business days to appear on your statement, depending on your bank. A confirmation email is on its way to you as well.\n\nIf this order was cancelled by mistake and you'd still like the items, just let me know and I can help you get a new order placed.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10030",
+          "args_digest": "e67cf50ea721",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10030",
+          "args_digest": "e67cf50ea721",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "refund_execute",
+          "effect_class": "external",
+          "target": "ord_10030",
+          "args_digest": "9f1fde211c15",
+          "disposition": "SHADOWED",
+          "external": true,
+          "note": "Payment-processor call suppressed; outcome simulated on the clone."
+        },
+        {
+          "seq": 3,
+          "tool": "send_email",
+          "effect_class": "external",
+          "target": "cus_0130",
+          "args_digest": "cdc3a15e340e",
+          "disposition": "SHADOWED",
+          "external": true,
+          "note": "Delivery suppressed; recorded on the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 5
+    },
+    "outcome": {
+      "trace_id": "tr_000031",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 5,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p1-b.",
+  "extra": {}
+}

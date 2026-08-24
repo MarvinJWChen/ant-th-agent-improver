@@ -1,0 +1,149 @@
+{
+  "envelope_version": 2,
+  "capture_id": "0e5045a861858dd912d2",
+  "created_at": "2026-08-24T22:24:32Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "a6a231685d07361dab09f348e17d207754efd63aca340a84d945def001fe4cc6",
+    "inputs_hash": "8018fee6aad257fc11d203dc8a735e424d1c1542dc5ea088db82fc52be32da87",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "b47242ca4468f2d62efbe2fe414c6d9205dababc967bae1577c62a4704e39a5a",
+    "tools_hash": "4230f9c5d5442528b6af75cb4effd3861a6dd03e1bbfe47252c38dad51bfa9d1",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "38e965e4dc73f1d626d9ac71592061afeba7141c4b679c533aa3bc106003ccb9",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000100",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p2-b/candidate/tr_000100.sqlite",
+      "clone_sha256": "6e509ab542222e2ec9cf8450e78132c6c152d60bc6e675ce284bd3b5be432493",
+      "clone_sha256_after": "6e509ab542222e2ec9cf8450e78132c6c152d60bc6e675ce284bd3b5be432493",
+      "source_world_sha256": "6e509ab542222e2ec9cf8450e78132c6c152d60bc6e675ce284bd3b5be432493",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up that order and check on the refund now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10099"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10099",
+            "customer_id": "cus_0199",
+            "amount_cents": 4800,
+            "currency": "USD",
+            "placed_at": "2026-05-29T20:19:22Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10099"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10099",
+            "refund_id": "rfd_000060",
+            "state": "processing",
+            "amount_cents": 4800,
+            "requested_at": "2026-06-27T13:25:50Z",
+            "completed_at": null,
+            "processor_ref": null,
+            "hours_since_request": 14.9,
+            "sla_hours": 48,
+            "sla_breached": false
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "Good news — your refund is on its way.\n\n- **Refund:** $48.00 for order ord_10099\n- **Status:** Processing\n- **Time since requested:** about 14.9 hours\n\nIt's tracking normally and is expected to complete within our standard 48-hour window, so you should see it land well within the next day and a half (your bank may take a little longer to post it).\n\nNo action is needed on your end — just write back if it hasn't shown up after that window and I'll take another look.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10099",
+          "args_digest": "eb6814433b1c",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10099",
+          "args_digest": "eb6814433b1c",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 2
+    },
+    "outcome": {
+      "trace_id": "tr_000100",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 2,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p2-b.",
+  "extra": {}
+}

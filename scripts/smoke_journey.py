@@ -65,7 +65,7 @@ def main() -> int:
     config_patterns = [pid for pid, k in kinds.items() if k == "config"]
     check("a config-remediable pattern exists", bool(config_patterns), ", ".join(config_patterns))
 
-    for pid in config_patterns[:1]:
+    for pid in config_patterns:
         patch = c.post(f"/api/patterns/{pid}/patch").json()
         versions = [x["candidate_version"] for x in patch["candidates"] if x["within_edit_boundary"]]
         check(f"{pid} patch", len(versions) == 2, ", ".join(versions))

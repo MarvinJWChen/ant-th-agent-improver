@@ -1,0 +1,215 @@
+{
+  "envelope_version": 2,
+  "capture_id": "7f020075dc395b0f24b0",
+  "created_at": "2026-08-24T22:23:13Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "9e67ffc10f40b3d8a35e38423b37abe5b048f93f31358529be5f86ee1198029b",
+    "inputs_hash": "3e6cb71f740928d09f6c884c933aa2f2e3a04885b0b6916a963f0cd50795ab6c",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "918327d41a5ec21dcfdd0de71cd27d944b709847fd68a028e8b1312443802a55",
+    "tools_hash": "86e83a7d0b129311da5a9c411a31d5c53b4b17a4b19836d9fe385b901b3a3ac5",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "c165bc58b1b91452e0dc710b80232b5ce6da864412296271f6265f01de09db4d",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000186",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p1-b/candidate/tr_000186.sqlite",
+      "clone_sha256": "979d716bab5a970f50a0b624cec5aeb6dda19979713e2ca6cccfe527cb738cdf",
+      "clone_sha256_after": "feaaf8cadcb24399747cc8b2ccefa6c72f2de71b77f2d0e0ec54c66bd77b0d32",
+      "source_world_sha256": "979d716bab5a970f50a0b624cec5aeb6dda19979713e2ca6cccfe527cb738cdf",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll get that started for you right away.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10185"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10185",
+            "customer_id": "cus_0285",
+            "amount_cents": 39500,
+            "currency": "USD",
+            "placed_at": "2026-07-10T21:49:03Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10185"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10185",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "tool_call",
+          "tool_name": "refund_execute",
+          "args": {
+            "order_id": "ord_10185",
+            "amount_cents": 39500
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_result",
+          "tool_name": "refund_execute",
+          "args": null,
+          "result": {
+            "refund_id": "rf_sim_4a86798c",
+            "order_id": "ord_10185",
+            "state": "completed",
+            "simulated": true
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "tool_call",
+          "tool_name": "send_email",
+          "args": {
+            "customer_id": "cus_0285",
+            "template": "refund_confirmation",
+            "order_id": "ord_10185"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 8,
+          "kind": "tool_result",
+          "tool_name": "send_email",
+          "args": null,
+          "result": {
+            "email_id": "em_sim_44489129",
+            "delivered": true,
+            "deduplicated": false,
+            "simulated": true
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 9,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "All set! Your refund for order ord_10185 has been processed in full — $395.00 USD is on its way back to your original payment method. Depending on your bank, it typically shows up within a few business days.\n\nA confirmation email is already in your inbox. Thanks for your patience, and let me know if there's anything else I can help with!",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10185",
+          "args_digest": "89b7c37884bc",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10185",
+          "args_digest": "89b7c37884bc",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "refund_execute",
+          "effect_class": "external",
+          "target": "ord_10185",
+          "args_digest": "2de9ff7ab10a",
+          "disposition": "SHADOWED",
+          "external": true,
+          "note": "Payment-processor call suppressed; outcome simulated on the clone."
+        },
+        {
+          "seq": 3,
+          "tool": "send_email",
+          "effect_class": "external",
+          "target": "cus_0285",
+          "args_digest": "13cfc16c5047",
+          "disposition": "SHADOWED",
+          "external": true,
+          "note": "Delivery suppressed; recorded on the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "resolved",
+      "turns": 5
+    },
+    "outcome": {
+      "trace_id": "tr_000186",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": false,
+      "turns": 5,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p1-b.",
+  "extra": {}
+}

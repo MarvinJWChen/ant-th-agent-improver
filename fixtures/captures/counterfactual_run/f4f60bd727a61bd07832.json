@@ -1,0 +1,177 @@
+{
+  "envelope_version": 2,
+  "capture_id": "f4f60bd727a61bd07832",
+  "created_at": "2026-08-24T22:23:06Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "872bf95d853c36258d7ccceed1405d8da9f5a38d2fa7d070d0a5a52677870319",
+    "inputs_hash": "df9e8884cfa0796ffa8e4f94e295f882060dd4fb3fdc4c10618f8e5a97440f32",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "918327d41a5ec21dcfdd0de71cd27d944b709847fd68a028e8b1312443802a55",
+    "tools_hash": "86e83a7d0b129311da5a9c411a31d5c53b4b17a4b19836d9fe385b901b3a3ac5",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "07846cbcd1ab937eeaceecaf364a400415e12097e21dcdfa4f17f35b7ac83f96",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000013",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p1-b/candidate/tr_000013.sqlite",
+      "clone_sha256": "42e928d5b75baa1781a52b77438599f13a4e0576dd138e1d1efec4082fc9410d",
+      "clone_sha256_after": "1f0ceb8b6c1a03890d4b51a3b2d7bd5b927c3a4d8a3ebeb69d493d91a966eff1",
+      "source_world_sha256": "42e928d5b75baa1781a52b77438599f13a4e0576dd138e1d1efec4082fc9410d",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up that order right away.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10012"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10012",
+            "customer_id": "cus_0112",
+            "amount_cents": 42600,
+            "currency": "USD",
+            "placed_at": "2026-03-24T10:36:09Z",
+            "status": "shipped"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10012"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10012",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "tool_call",
+          "tool_name": "escalate_to_human",
+          "args": {
+            "order_id": "ord_10012",
+            "reason": "Customer asked to cancel ord_10012 before shipment, but the order has already shipped (status: shipped, $426.00, cus_0112). No refund has been issued yet (state: none). Needs a human to arrange a return/recall and confirm whether to refund the full $426.00 once the package is returned or refused."
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_result",
+          "tool_name": "escalate_to_human",
+          "args": null,
+          "result": {
+            "escalation_id": "esc_sim_03a2e08f",
+            "created": true,
+            "refund_state": "none"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "Here's where things stand:\n\nUnfortunately, order ord_10012 ($426.00) has **already shipped**, so I can't cancel it at this point. I don't want to leave you stuck with something you don't want, though, so I've escalated this to a human teammate (ref: esc_sim_03a2e08f) who can arrange a return or package recall and get your refund issued.\n\nThey'll follow up with you directly with the return details — no action needed from you in the meantime. If the package arrives before you hear from them, you can also simply refuse delivery, which sends it straight back.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10012",
+          "args_digest": "06586f3f36f4",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10012",
+          "args_digest": "06586f3f36f4",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "escalate_to_human",
+          "effect_class": "shadow_write",
+          "target": "ord_10012",
+          "args_digest": "325977045eae",
+          "disposition": "APPLIED_TO_CLONE",
+          "external": false,
+          "note": "Support escalation written to the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "escalated",
+      "turns": 4
+    },
+    "outcome": {
+      "trace_id": "tr_000013",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": true,
+      "turns": 4,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p1-b.",
+  "extra": {}
+}

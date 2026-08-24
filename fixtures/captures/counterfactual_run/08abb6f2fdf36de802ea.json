@@ -1,0 +1,186 @@
+{
+  "envelope_version": 2,
+  "capture_id": "08abb6f2fdf36de802ea",
+  "created_at": "2026-08-24T22:24:46Z",
+  "key": {
+    "task": "counterfactual_run",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "a719a2954a7ad82e758211519862b8f0bd6bb937676644db5ab5f3ee6090eefb",
+    "inputs_hash": "15f9ec1d4baae64ba9c32f8bd8e930abc2ce9421ad84419c1a13e7231e895c5e",
+    "output_schema_hash": "9bccdf70460ac26f311d6c6bf6a01c7714b67f31c8d169b6495a688144fe8136",
+    "agent_config_hash": "b47242ca4468f2d62efbe2fe414c6d9205dababc967bae1577c62a4704e39a5a",
+    "tools_hash": "4230f9c5d5442528b6af75cb4effd3861a6dd03e1bbfe47252c38dad51bfa9d1",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "b409125e1ff835744bd52432e345b9d4fc14cc274cf52c79955749d5b1b0592d",
+    "loop_version": "2026-08-24.1"
+  },
+  "output": {
+    "arm": {
+      "arm": "candidate",
+      "trace_id": "tr_000380",
+      "clone_path": "/home/jwc/projects/ant-th-agent-improver/var/runs/capture_v2-p2-b/candidate/tr_000380.sqlite",
+      "clone_sha256": "38c855ece5574f9a96681919bffe5e244842b719fab71751dee5fc205d32ff4d",
+      "clone_sha256_after": "c8cd3663efe19965ab6610e15b06b0034b32da96542aac4e403e1e492e77df3b",
+      "source_world_sha256": "38c855ece5574f9a96681919bffe5e244842b719fab71751dee5fc205d32ff4d",
+      "execution": "re-executed",
+      "steps": [
+        {
+          "seq": 0,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I'll pull up your order and refund status right now.",
+          "diverged": false
+        },
+        {
+          "seq": 1,
+          "kind": "tool_call",
+          "tool_name": "order_lookup",
+          "args": {
+            "order_id": "ord_10379"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 2,
+          "kind": "tool_result",
+          "tool_name": "order_lookup",
+          "args": null,
+          "result": {
+            "found": true,
+            "order_id": "ord_10379",
+            "customer_id": "cus_0479",
+            "amount_cents": 44200,
+            "currency": "USD",
+            "placed_at": "2026-03-23T00:30:35Z",
+            "status": "delivered"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 3,
+          "kind": "tool_call",
+          "tool_name": "refund_status",
+          "args": {
+            "order_id": "ord_10379"
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 4,
+          "kind": "tool_result",
+          "tool_name": "refund_status",
+          "args": null,
+          "result": {
+            "order_id": "ord_10379",
+            "state": "none",
+            "sla_hours": 48
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 5,
+          "kind": "model_turn",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I looked into this, and here's what I found: your order **ord_10379** ($442.00, placed March 23) shows as delivered, but there's **no refund on file for it** — nothing has been started on our end, so nothing is currently in flight.\n\nSince you were expecting one, I don't want to leave that sitting. Let me get a person on it.",
+          "diverged": false
+        },
+        {
+          "seq": 6,
+          "kind": "tool_call",
+          "tool_name": "escalate_to_human",
+          "args": {
+            "order_id": "ord_10379",
+            "reason": "Customer checking in on a refund for ord_10379 ($442.00, delivered), but refund_status returns state=none — no refund was ever created. Customer clearly expected one, so a request may have been lost or never logged. Needs a human to confirm the refund reason/eligibility and issue it."
+          },
+          "result": null,
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 7,
+          "kind": "tool_result",
+          "tool_name": "escalate_to_human",
+          "args": null,
+          "result": {
+            "escalation_id": "esc_sim_78e320b2",
+            "created": true,
+            "refund_state": "none"
+          },
+          "text": null,
+          "diverged": false
+        },
+        {
+          "seq": 8,
+          "kind": "agent_msg",
+          "tool_name": null,
+          "args": null,
+          "result": null,
+          "text": "I've escalated this to a human teammate (reference **esc_sim_78e320b2**) so they can confirm the details and get the refund issued for you.\n\nTo summarize:\n- **No refund has been started** on ord_10379 — so there's nothing pending or delayed, it simply wasn't logged.\n- A colleague will pick this up and get it moving.\n\nI held off on issuing the $442 myself only because there's no record of why the refund was requested, and I want to make sure it's processed correctly the first time rather than creating a problem that delays your money further.\n\nSorry for the runaround — if you can share what prompted the refund (return, damaged item, etc.), that'll help my teammate move faster when they reach out.",
+          "diverged": false
+        }
+      ],
+      "ledger": [
+        {
+          "seq": 0,
+          "tool": "order_lookup",
+          "effect_class": "read",
+          "target": "ord_10379",
+          "args_digest": "ec7b206d51d3",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 1,
+          "tool": "refund_status",
+          "effect_class": "read",
+          "target": "ord_10379",
+          "args_digest": "ec7b206d51d3",
+          "disposition": "READ_FROM_CLONE",
+          "external": false,
+          "note": null
+        },
+        {
+          "seq": 2,
+          "tool": "escalate_to_human",
+          "effect_class": "shadow_write",
+          "target": "ord_10379",
+          "args_digest": "5fc212dc2eaa",
+          "disposition": "APPLIED_TO_CLONE",
+          "external": false,
+          "note": "Support escalation written to the clone only."
+        }
+      ],
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "outcome": "escalated",
+      "turns": 3
+    },
+    "outcome": {
+      "trace_id": "tr_000380",
+      "double_refund": false,
+      "duplicate_confirmation": false,
+      "premature_escalation": false,
+      "escalated": true,
+      "turns": 3,
+      "unsafe_effects": 0,
+      "external_calls_executed": 0,
+      "passed": true,
+      "failures": []
+    },
+    "stopped_because": "end_turn"
+  },
+  "notes": "Live counterfactual run for v2-p2-b.",
+  "extra": {}
+}
