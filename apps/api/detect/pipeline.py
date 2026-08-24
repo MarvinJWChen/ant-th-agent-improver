@@ -30,10 +30,11 @@ def discover(force: bool = False) -> DiscoveryResult:
     traces = [store.get_trace(t) for t in trace_ids]
     feats = [extract(t) for t in traces]
 
-    # 1 — rules: precise, evidence-producing, and deliberately incomplete.
+    # 1 — observable failure signals: generic, evidence-producing, family-agnostic.
+    medians = evaluators.peer_medians(traces)
     rule_hits: dict[str, list[EvidenceHit]] = {}
     for t, f in zip(traces, feats):
-        hits = evaluators.evaluate(t, f)
+        hits = evaluators.evaluate(t, f, medians)
         if hits:
             rule_hits[t.trace_id] = hits
 

@@ -14,7 +14,13 @@ from sklearn.metrics import silhouette_score
 
 from apps.api.detect.features import NUMERIC_FEATURES, TraceFeatures
 
-K_RANGE = (2, 3, 4, 5)
+K_RANGE = (3, 4, 5, 6, 7, 8)
+
+# Silhouette rises monotonically with k on this data, so "best silhouette" would
+# always pick the largest k and shatter coherent behaviours into fragments.
+# Take the smallest k that is nearly as good as the best instead — the standard
+# elbow reading, and the one that keeps a pattern card meaningful.
+SILHOUETTE_TOLERANCE = 0.92
 
 # Generic, tool-level phrasing for numeric features. No failure family appears
 # here — these are descriptions of trace shape.
@@ -61,19 +67,21 @@ def _token_phrase(tok: str) -> str:
 
 
 def choose_k(matrix: np.ndarray) -> tuple[int, float, np.ndarray]:
-    best = (K_RANGE[0], -1.0, None)
+    scored: list[tuple[int, float, np.ndarray]] = []
     for k in K_RANGE:
         if matrix.shape[0] <= k + 1:
             continue
         labels = AgglomerativeClustering(n_clusters=k, linkage="ward").fit_predict(matrix)
         if len(set(labels)) < 2:
             continue
-        s = float(silhouette_score(matrix, labels))
-        if s > best[1]:
-            best = (k, s, labels)
-    if best[2] is None:  # degenerate corpus
+        scored.append((k, float(silhouette_score(matrix, labels)), labels))
+    if not scored:  # degenerate corpus
         return 1, 0.0, np.zeros(matrix.shape[0], dtype=int)
-    return best
+    best_sil = max(s for _, s, _ in scored)
+    for k, s, labels in scored:  # K_RANGE is ascending, so this is the smallest
+        if s >= SILHOUETTE_TOLERANCE * best_sil:
+            return k, s, labels
+    return scored[-1]
 
 
 def describe(

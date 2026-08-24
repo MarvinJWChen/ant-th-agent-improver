@@ -78,9 +78,9 @@ export function PatternDetail() {
         subtitle={p.signature}
         right={
           p.discovered_by === "anomaly-only" ? (
-            <Badge tone="accent" dot>found without a rule</Badge>
+            <Badge tone="accent" dot>anomaly only</Badge>
           ) : (
-            <Badge tone="info">rule + anomaly</Badge>
+            <Badge tone="info">signal + anomaly</Badge>
           )
         }
       />

@@ -21,7 +21,7 @@ export function Discovery() {
       <SectionHeading
         as="h1"
         title="Discovered failure patterns"
-        subtitle={`${data.n_flagged} of ${data.n_traces_scanned.toLocaleString()} traces were flagged, then grouped into ${data.patterns.length} recurring behaviours.`}
+        subtitle={`${data.n_flagged} of ${data.n_traces_scanned.toLocaleString()} traces were flagged by family-agnostic signals, then grouped into ${data.patterns.length} recurring behaviours.`}
         right={
           <Button
             variant="secondary"
@@ -40,7 +40,7 @@ export function Discovery() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile label="Traces scanned" value={data.n_traces_scanned.toLocaleString()} sublabel="every trace, every run" />
         <StatTile label="Flagged" value={data.n_flagged} sublabel={`${pct(data.n_flagged / data.n_traces_scanned, 0)} of the corpus`} />
-        <StatTile label="Found without a rule" value={data.n_anomaly_only} sublabel="generic anomaly signal only" />
+        <StatTile label="Anomaly-only finds" value={data.n_anomaly_only} sublabel="no observable signal fired" />
         <StatTile label="Cluster quality" value={data.silhouette.toFixed(2)} sublabel={`k=${data.cluster_k} chosen by silhouette`} />
       </div>
 
@@ -52,18 +52,19 @@ export function Discovery() {
           <div>
             <div className="mb-1 font-medium text-primary">Observable failure signals</div>
             <p className="leading-relaxed text-secondary">
-              Precise rules that produce citable evidence and flagged{" "}
-              <span className="font-mono">{data.n_rule_flagged}</span> traces. Useful, but they only ever
-              catch what somebody already thought to write down.
+              Four generic signals — the agent didn't finish, an effect repeated at one target, an effect
+              issued at a target already read as finished, a retry after an ambiguous timeout — flagged{" "}
+              <span className="font-mono">{data.n_rule_flagged}</span> traces. None of them names a refund,
+              an email, or an SLA, so the seeded failures have to be recovered from behaviour alone.
             </p>
           </div>
           <div>
             <div className="mb-1 font-medium text-primary">Generic anomaly model</div>
             <p className="leading-relaxed text-secondary">
-              Knows nothing about refunds. Scores every trace on incompletion, cost relative to
-              same-intent peers, and shape isolation — threshold{" "}
+              Scores every trace on incompletion, cost relative to same-intent peers, and shape
+              isolation — threshold{" "}
               <span className="font-mono">{data.anomaly_threshold.toFixed(3)}</span>. It contributed{" "}
-              <span className="font-mono">{data.n_anomaly_only}</span> traces no rule caught.
+              <span className="font-mono">{data.n_anomaly_only}</span> traces no signal caught.
             </p>
           </div>
         </div>
@@ -100,7 +101,7 @@ export function Discovery() {
               header: "Found by",
               render: (f) =>
                 f.rule_flagged ? (
-                  <Badge tone="info">rule + anomaly</Badge>
+                  <Badge tone="info">signal + anomaly</Badge>
                 ) : (
                   <Badge tone="accent" dot>anomaly only</Badge>
                 ),
@@ -123,9 +124,9 @@ function PatternRow({ pattern, onInvestigate }: { pattern: PatternCard; onInvest
       subtitle={pattern.signature}
       right={
         anomalyOnly ? (
-          <Badge tone="accent" dot>no rule covers this</Badge>
+          <Badge tone="accent" dot>anomaly only</Badge>
         ) : (
-          <Badge tone="info">rule + anomaly</Badge>
+          <Badge tone="info">signal + anomaly</Badge>
         )
       }
       footer={
