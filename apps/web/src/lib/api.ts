@@ -213,6 +213,7 @@ export interface ArmRun {
   trace_id: string;
   clone_path: string;
   clone_sha256: string;
+  clone_sha256_after: string;
   source_world_sha256: string;
   execution: "replayed" | "re-executed";
   steps: ArmStep[];

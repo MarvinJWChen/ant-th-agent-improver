@@ -258,7 +258,8 @@ class ArmRun(BaseModel):
     arm: Literal["baseline", "candidate"]
     trace_id: str
     clone_path: str
-    clone_sha256: str
+    clone_sha256: str          # at creation — identical across arms, proving the same start
+    clone_sha256_after: str    # after the arm ran — differs when effects differed
     source_world_sha256: str
     execution: Literal["replayed", "re-executed"]
     steps: list[ArmTrajectoryStep]

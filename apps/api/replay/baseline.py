@@ -62,6 +62,7 @@ def run_baseline(trace: TraceDetail, run_id: str) -> tuple[ArmRun, TraceOutcome]
     conn.commit()
     outcome = score_arm(conn, ledger, trace.trace_id, trace.order_id, turns)
     conn.close()
+    after = world_mod.sha256_file(clone.path)
 
     if not world_mod.source_unchanged(clone):  # pragma: no cover - safety net
         raise RuntimeError(f"frozen world for {trace.trace_id} was mutated by the baseline arm")
@@ -71,6 +72,7 @@ def run_baseline(trace: TraceDetail, run_id: str) -> tuple[ArmRun, TraceOutcome]
         trace_id=trace.trace_id,
         clone_path=str(clone.path),
         clone_sha256=clone.sha256,
+        clone_sha256_after=after,
         source_world_sha256=clone.source_sha256,
         execution="replayed",
         steps=steps,

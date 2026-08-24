@@ -1,0 +1,34 @@
+{
+  "envelope_version": 2,
+  "capture_id": "1da2eba6f603d9dddda4",
+  "created_at": "2026-08-24T21:07:49Z",
+  "key": {
+    "task": "diagnose_pattern",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "07a83d1e160d9c0c7724656a9f1918d01872d674af84f2320dc6ff67d0f2b9fb",
+    "inputs_hash": "8dc7b04c1b76dca36287dd6f4bccd9dcbf3553f7b443f61c843f6c7c11f49302",
+    "output_schema_hash": "79f16428c2594db1f961446890d9e19b57a5af3ca49daea995fa39ecb7579175",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "root_cause": "The system prompt contains an unconditional \"finish the job / get the customer paid\" imperative with no terminal state defined for an already-completed refund, and neither `refund_execute`'s description nor its return contract encodes a precondition or idempotency guarantee. So when `refund_status` returns state=completed together with sla_breached=true, the model has an instruction telling it to take further payment action and nothing in the tool contract telling it that a second refund is illegal or redundant. The `sla_breached=true` flag is the trigger signal that the situation is 'not sorted out', and `refund_execute` is the only tool that looks like it 'gets the customer paid'.",
+    "mechanism": "Step 1: user asks a pure status question (tr_000693, tr_000647, tr_000259, tr_000400 all have intent=refund_status_inquiry). Step 2: agent calls order_lookup, then refund_status, which returns state=completed, completed_at populated, and sla_breached=true (e.g. hours_since_request=181.1 vs sla_hours=48 in tr_000259). Step 3: the agent has to reconcile 'refund already completed' with the prompt's 'Don't leave a refund request half-finished \\u2014 if there is more you can do to get the customer paid, go ahead and do it rather than just describing the situation back to them' and 'never ... just acknowledged'. The sla_breached flag reads as an unresolved defect, and the prompt offers no rule that a completed refund is a terminal state where reporting is the correct action. Step 4: the only 'get the customer paid' tool is refund_execute, whose description ('Execute a refund for an order for a given amount') states no precondition about existing refunds; the agent passes the full order amount straight from order_lookup/refund_status (13700, 40100, 41600, 33600). Step 5: the tool accepts it and returns a brand-new refund_id and processor_ref (rfd_000446 -> rfd_000447 in tr_000693; rfd_000414 -> rfd_000415 in tr_000647), i.e. a second real disbursement rather than an idempotent no-op or error. Step 6: the agent then sends template=refund_confirmation and closes with 'this has been taken care of', so the duplicate is presented to the customer as success and the trace is labelled outcome=resolved. Note also that the SLA breach, which the prompt's 'waiting too long -> escalate' clause arguably covers, never produces an escalate_to_human call; the payment imperative outcompetes the escalation clause.",
+    "why_it_recurs": "It is a deterministic policy, not a flaky retry. The distinguishing features show n_refund_execute=1.00 and max_repeat_identical_call=1.00 (cohort 1.48) \\u2014 the agent fires exactly one extra refund, cleanly, on every trace matching the input condition rather than looping or stumbling. The trigger (refund_status returning state=completed plus sla_breached=true) is a common data state in the refund population, and both drivers are static: the prompt wording is fixed for every conversation, and refund_execute silently succeeds on an already-refunded order every time (new refund_id issued in tr_000693, tr_000647, tr_000259, tr_000400, and per the cluster evidence on ord_10004, ord_10027, ord_10053 at event 8). Nothing in the loop provides negative feedback: the tool returns state=completed, the email is delivered=true, and the trace is scored resolved, so 80 traces (19% of flagged) reproduce the identical 4-tool shape.",
+    "cited_trace_ids": [
+      "tr_000693",
+      "tr_000647",
+      "tr_000259",
+      "tr_000400"
+    ],
+    "confidence": "high",
+    "remediation_kind": "config",
+    "remediation_summary": "Config first: (1) qualify the action imperative in the system prompt \\u2014 state explicitly that if refund_status returns state=completed the refund is finished, the only correct actions are to report the outcome and, if sla_breached=true, escalate_to_human and/or send refund_delay_notice; never call refund_execute. (2) Rewrite refund_execute's description to name its precondition ('Only call when refund_status reports no existing refund or a failed/cancelled refund. Calling this on an order whose refund is already state=completed issues a second, duplicate disbursement.') and require the agent to have read refund_status in the same conversation. (3) Rename/redescribe refund_status, whose current wording 'Check and process the refund status' falsely implies it performs processing and muddies the read/write boundary. (4) Bind the escalation rule to the data, not to sentiment: sla_breached=true or hours_since_request > sla_hours must route to escalate_to_human. Follow-up hardening (code, defence in depth): make refund_execute idempotent per order \\u2014 reject or no-op with an explicit error when a completed refund already exists \\u2014 so prompt drift cannot cause double payment again."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

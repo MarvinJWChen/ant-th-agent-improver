@@ -1,0 +1,32 @@
+# version control
+.git
+.gitignore
+
+# runtime state / seeded corpus (regenerated inside the image at build time)
+var/
+*.db
+*.sqlite
+*.sqlite3
+
+# secrets — never send to the build context
+.env
+.env.*
+*.key
+.anthropic_key
+
+# python
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# node / web build artifacts (rebuilt inside the image)
+node_modules/
+apps/web/node_modules/
+apps/web/dist/
+
+# not needed inside the image
+tests/
+.DS_Store

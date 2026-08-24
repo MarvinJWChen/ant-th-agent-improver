@@ -54,9 +54,9 @@ interface PatternRow {
 }
 
 const PATTERN_ROWS: PatternRow[] = [
-  { id: "pat_001", label: "Double refund on retry", family: "F1_double_refund", frequency: 34, severity: "danger" },
-  { id: "pat_002", label: "Duplicate confirmation email", family: "F2_duplicate_confirmation", frequency: 21, severity: "warn" },
-  { id: "pat_003", label: "Premature escalation", family: "F3_premature_escalation", frequency: 18, severity: "warn" },
+  { id: "pat_001", label: "Double refund on retry", family: "cluster-a", frequency: 34, severity: "danger" },
+  { id: "pat_002", label: "Duplicate confirmation email", family: "cluster-b", frequency: 21, severity: "warn" },
+  { id: "pat_003", label: "Premature escalation", family: "cluster-c", frequency: 18, severity: "warn" },
   { id: "pat_004", label: "Slow order lookup chain", family: "generic_latency", frequency: 9, severity: "ok" },
   { id: "pat_005", label: "Ambiguous refund_status read", family: "generic_ambiguous_tool", frequency: 6, severity: "ok" },
 ];

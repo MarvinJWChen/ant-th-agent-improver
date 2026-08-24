@@ -237,8 +237,9 @@ function ArmPanel({ arm }: { arm: ArmRun }) {
     <div className="space-y-3">
       <KeyValue
         items={[
-          { key: "clone", label: "clone", value: arm.clone_sha256, mono: true, truncateMiddle: true },
           { key: "src", label: "source world", value: arm.source_world_sha256, mono: true, truncateMiddle: true },
+          { key: "clone", label: "clone at start", value: arm.clone_sha256, mono: true, truncateMiddle: true },
+          { key: "after", label: "clone after run", value: arm.clone_sha256_after, mono: true, truncateMiddle: true },
           { key: "outcome", label: "outcome", value: arm.outcome },
         ]}
       />

@@ -82,6 +82,7 @@ def run_candidate_live(
     conn.commit()
     outcome = score_arm(conn, ledger, trace.trace_id, trace.order_id, result.turns)
     conn.close()
+    after = world_mod.sha256_file(clone.path)
 
     if not world_mod.source_unchanged(clone):  # pragma: no cover - safety net
         raise RuntimeError(f"frozen world for {trace.trace_id} was mutated by the candidate arm")
@@ -91,6 +92,7 @@ def run_candidate_live(
         trace_id=trace.trace_id,
         clone_path=str(clone.path),
         clone_sha256=clone.sha256,
+        clone_sha256_after=after,
         source_world_sha256=clone.source_sha256,
         execution="re-executed",
         steps=result.steps,
