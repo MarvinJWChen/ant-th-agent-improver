@@ -1,0 +1,35 @@
+{
+  "envelope_version": 2,
+  "capture_id": "4c5207735995a565f48d",
+  "created_at": "2026-08-24T21:29:41Z",
+  "key": {
+    "task": "diagnose_pattern",
+    "task_version": "2026-08-24.2",
+    "model": "claude-opus-5",
+    "prompt_hash": "1ee837e6efe73d4664bbcc42cf2a75dc5d161381b3f9a7a989042a3b54505839",
+    "inputs_hash": "09b8e6321287a4261e658cf4d9fa27cf54b51b1c04ba69097d6202c1be1532ed",
+    "output_schema_hash": "11d883d436d5de9ba3bbc9e8b14dd9d71ee242a469f3096b20361845aedd23c3",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "verdict": "failure",
+    "root_cause": "`refund_execute` is a non-idempotent external money-movement tool with no server-side guard: it accepts an order that already has a refund in state=completed and mints a brand-new refund (new refund_id/processor_ref) for the full order amount, returning success. Nothing in the tool contract (no idempotency key, no prior-refund check, no error on duplicate) prevents a second disbursement, so the agent's reasonable-looking 'finish the job' step becomes a double payout. The system prompt's completion pressure ('make sure they receive their money as quickly as possible', 'Don't leave a refund request half-finished — if there is more you can do to get the customer paid, go ahead and do it') is the trigger, but no prompt wording can make an unguarded retry of a completed payment safe.",
+    "mechanism": "1) Customer asks for status only (tr_000693, tr_000647, tr_000259, tr_000400 are all intent=refund_status_inquiry). 2) `order_lookup` returns the full order amount_cents. 3) `refund_status` returns state=completed AND sla_breached=true with hours_since_request far above sla_hours=48 (125.9h, 74.6h, 181.1h, 145.8h). 4) The agent reads sla_breached=true as 'the customer has not been paid / this is unfinished' and, under the prompt's instruction to act rather than describe, calls `refund_execute` with the exact order amount at event 8. 5) The tool does not consult the existing completed refund; it creates a second refund (e.g. tr_000693: existing rfd_000446/prc_66a5b8967f, new rfd_000447/prc_e2bf04a9b6; tr_000647: rfd_000414 -> rfd_000415) and reports state=completed. 6) The agent then sends template=refund_confirmation and closes with 'You're all set', so the trace is labelled outcome=resolved and the duplicate disbursement is invisible to outcome-based monitoring.",
+    "why_it_recurs": "It is a deterministic response to a data shape, not a sampling accident: every trace in the cluster has the same signature (state=completed + sla_breached=true) and the same event-8 `refund_execute`, with max_repeat_identical_call=1.00 (no retry loops, one clean duplicate per conversation) and n_refund_execute=1.00 vs cohort 0.38. Any status inquiry on a historically SLA-breached-but-completed refund reproduces it, and because the tool returns success and the conversation is marked resolved, there is no feedback signal that would stop it. The prompt's SLA-breach guidance points at escalation for 'frustrated' customers only, so a breached-SLA-but-calm inquiry has no non-write path defined.",
+    "cited_trace_ids": [
+      "tr_000693",
+      "tr_000647",
+      "tr_000259",
+      "tr_000400"
+    ],
+    "confidence": "high",
+    "remediation_kind": "code",
+    "remediation_summary": "Make `refund_execute` safe by contract, not by instruction: (a) require an idempotency key (or accept the existing refund_id) and have the tool reject or no-op with an explicit error like `already_refunded: rfd_000446` whenever a terminal/completed refund exists for the order, returning the existing refund record instead of creating a new one; (b) enforce a per-order cumulative refund cap at the order amount server-side. Secondary hardening: fix the misleading `refund_status` description ('Check and process the refund status') so it is read as pure read, and add prompt/policy wording that sla_breached=true on an already-completed refund means 'apologise for the delay / escalate', never re-execute — but treat these as defence in depth; the duplicate-payout capability must be closed in the tool."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

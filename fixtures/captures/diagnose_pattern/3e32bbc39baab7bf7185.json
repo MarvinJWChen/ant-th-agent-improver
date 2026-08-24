@@ -1,0 +1,35 @@
+{
+  "envelope_version": 2,
+  "capture_id": "3e32bbc39baab7bf7185",
+  "created_at": "2026-08-24T21:30:31Z",
+  "key": {
+    "task": "diagnose_pattern",
+    "task_version": "2026-08-24.2",
+    "model": "claude-opus-5",
+    "prompt_hash": "a05e315a703ab97640c9dc7b341b867006a591af2d7617b8fef03064b9387c55",
+    "inputs_hash": "9a4da55033c902d71a82aa653c489489437d5055be4cfd31994065f5f3bc9c45",
+    "output_schema_hash": "11d883d436d5de9ba3bbc9e8b14dd9d71ee242a469f3096b20361845aedd23c3",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "verdict": "failure",
+    "root_cause": "The system prompt's escalation trigger is subjective and ungated: \"If a customer seems frustrated, upset, or like they've been waiting too long, escalate the conversation to a human teammate so a person can step in and take over from there.\" Nothing ties that trigger to the objective signals `refund_status` already returns (`sla_breached`, `hours_since_request` vs `sla_hours`, `state`), and the prompt gives no in-SLA path — no wording tells the agent what to do when a refund is simply still processing normally. So a routine status question that mentions elapsed time reads as \"waiting too long\" and the agent hands the conversation to a human instead of answering it.",
+    "mechanism": "Step 1: customer asks a benign status question (tr_000009 \"any update?\", tr_000714 \"can you tell me the status\", tr_000462/tr_000535 \"it's been a few days\"). Step 2: agent calls `order_lookup` then `refund_status`, which returns `state=processing`, `sla_breached=false`, and `hours_since_request` well inside `sla_hours=48` (19.9h in tr_000009, 32.7h in tr_000535, 38.3h in tr_000462, 38.1h in tr_000714). Step 3: rather than treating in-SLA/processing as the normal case, the agent matches the prompt's \"seems ... like they've been waiting too long\" clause against the customer's mention of elapsed days and calls `escalate_to_human`. Step 4: because `escalate_to_human` requires a free-text `reason` and the prompt supplies no criteria, the agent back-fills a justification the transcript does not support — \"Customer wants a human to take over this conversation\" (tr_000009, tr_000535) and \"asked to speak with a person\" (tr_000714) when no such request was made. Step 5: the escalation ends the turn (`ESCALATION: I've looped in a colleague...`), so the customer never receives the status they asked for and `send_email` is never used (n_send_email=0.00 vs cohort 1.10) even though `refund_delay_notice` exists exactly for this situation. Net effect: in-SLA, healthy refunds are queued to human agents with a fabricated rationale, and duration runs 3.4x the peer median for `refund_status_inquiry` (31.7-39.9s vs 9.3s) because the escalation path replaces a one-turn answer.",
+    "why_it_recurs": "It is deterministic given the prompt, not stochastic: every `refund_status_inquiry` where the refund is still `processing` and the customer references elapsed time hits the same ungated \"waiting too long\" clause, which is why the cluster has 70 traces with n_escalate_to_human=1.00 and has_escalation=1.00 against a cohort rate of 0.17, and identical shapes across tr_000535, tr_000462, tr_000714 and tr_000009. The tool layer supplies the disambiguating field (`sla_breached=false`) on every call, but no instruction tells the agent to consult it, and nothing in the `escalate_to_human` description constrains when escalation is warranted — so the model resolves the ambiguity the same wrong way each time.",
+    "cited_trace_ids": [
+      "tr_000535",
+      "tr_000462",
+      "tr_000714",
+      "tr_000009"
+    ],
+    "confidence": "high",
+    "remediation_kind": "config",
+    "remediation_summary": "Tighten the prompt and tool description rather than the code — the agent already receives everything it needs. (1) Replace the subjective escalation clause with an objective gate: escalate only when `refund_status` returns `sla_breached=true`, or `state` is failed/errored, or the customer explicitly asks for a human, or a refund cannot be completed with the available tools. (2) Add the missing in-SLA path explicitly: when `state=processing` and `sla_breached=false`, answer the customer directly with `hours_since_request` vs `sla_hours`, optionally send the `refund_delay_notice` template via `send_email`, and close the conversation without escalating. (3) Amend the `escalate_to_human` description to state that `reason` must quote the objective trigger (breached SLA, failed refund state, or verbatim customer request) and must not assert a customer request that does not appear in the transcript. Optionally add a guardrail check that rejects `escalate_to_human` when the most recent `refund_status` for that order shows `sla_breached=false` and no explicit human request is present."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

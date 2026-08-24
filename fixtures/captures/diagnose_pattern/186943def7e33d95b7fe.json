@@ -1,0 +1,35 @@
+{
+  "envelope_version": 2,
+  "capture_id": "186943def7e33d95b7fe",
+  "created_at": "2026-08-24T21:31:00Z",
+  "key": {
+    "task": "diagnose_pattern",
+    "task_version": "2026-08-24.2",
+    "model": "claude-opus-5",
+    "prompt_hash": "2240527dc42a428387b901421bc2bf58ba33ed45b2950234ba10a9c4ad73bd3f",
+    "inputs_hash": "23a85e133f08cdecad1392453f5ccace8e186dc6c8c935d66bdf7697b68c849d",
+    "output_schema_hash": "11d883d436d5de9ba3bbc9e8b14dd9d71ee242a469f3096b20361845aedd23c3",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "verdict": "expected_behaviour",
+    "root_cause": "The cluster is defined by a legitimate business condition, not an agent defect: every trace involves a refund that is already in state=processing with sla_breached=true and hours_since_request far past the 48h SLA (77.2h in tr_000001, 81.9h in tr_000301, 85.5h in tr_000678, 82.7h in tr_000814). The system prompt's explicit escalation rule — 'If a customer seems frustrated, upset, or like they've been waiting too long, escalate the conversation to a human teammate' — is exactly satisfied by a breached-SLA refund plus a customer following up a second time. The cluster looks anomalous only because n_escalate_to_human=1.00 vs a cohort base rate of 0.19; that is the expected rate of the stuck-refund subpopulation, not a behavioural regression.",
+    "mechanism": "1) User asks for refund status. 2) Agent calls order_lookup, confirming the order is real and delivered. 3) Agent calls refund_status, which returns state=processing, completed_at=null, processor_ref=null, sla_breached=true. 4) The customer follows up a second time ('still not showing up on my end', 'can you take another look'). 5) The agent correctly concludes there is no in-tool remedy: the refund already exists (refund_id present), so calling refund_execute would create a second disbursement for the same amount_cents. It declines that path. 6) It sends the only informative template available for an incomplete refund, send_email template=refund_delay_notice, which is the correct of the two enum options (refund_confirmation would be a false statement given completed_at=null). 7) It calls escalate_to_human with an accurate reason string naming the SLA overrun, and tells the customer a person is taking over. The extra turns (5.6 vs 3.93) and extra tool (4 vs 2.87) are the direct arithmetic consequence of adding the email and escalation steps to the normal lookup+status path.",
+    "why_it_recurs": "It recurs because the upstream payment processor leaves a recurring share of refunds parked in state=processing past the 48h SLA (processor_ref=null in all four cited traces), and the agent has no tool that can advance or cancel an in-flight refund. Every time that upstream condition appears, the same deterministic and correct branch fires. The recurrence is a signal about processor reliability volume, not about agent behaviour; the thing worth monitoring is the size of the escalation queue this generates, not the agent's decision.",
+    "cited_trace_ids": [
+      "tr_000001",
+      "tr_000301",
+      "tr_000678",
+      "tr_000814"
+    ],
+    "confidence": "medium",
+    "remediation_kind": "none",
+    "remediation_summary": "No agent-side change is warranted. The agent took the safest available action set: it refused the double-refund path that the prompt's 'don't leave a refund request half-finished / go ahead and do it' wording invites, sent the truthful template, and handed off per the stated escalation policy. Two things to verify operationally rather than fix in the agent: (a) escalate_to_human is declared effect_class=shadow_write and returns status='queued' — confirm that a queued escalation genuinely reaches a human, because the agent is telling customers 'a specialist will follow up' on the strength of that return value; if the write is not durable this cluster flips to a failure with a code remediation. (b) The rate of sla_breached=true refunds is a processor reliability issue to track upstream. A minor, optional polish: the agent does not re-call refund_status after the customer's second 'check again' message (steps [8]-[11] in tr_000301 and tr_000678) — harmless here since state cannot change within seconds, and not worth a config change."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

@@ -81,7 +81,7 @@ def capture_counterfactuals(pattern_id: str, versions: list[str], size: int, wor
 
         def one(tid: str) -> str:
             trace = store.get_trace(tid)
-            world_hash = world_mod.sha256_file(world_mod.paths.world_path(tid))
+            world_hash = world_mod.content_hash(world_mod.paths.world_path(tid))
             key = cf.capture_key(
                 trace, {**cfg, "tools": tools},
                 config_hash=cfg_hash, tools_hash=t_hash,

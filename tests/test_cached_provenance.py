@@ -107,6 +107,7 @@ def test_schema_validation_rejects_a_malformed_output():
     from apps.api.llm.tasks import DIAGNOSE_SCHEMA
 
     good = {
+        "verdict": "failure",
         "root_cause": "a", "mechanism": "b", "why_it_recurs": "c",
         "cited_trace_ids": ["tr_1"], "confidence": "high",
         "remediation_kind": "config", "remediation_summary": "d",
@@ -115,6 +116,8 @@ def test_schema_validation_rejects_a_malformed_output():
 
     with pytest.raises(runner.SchemaViolation):
         runner.validate({**good, "confidence": "certain"}, DIAGNOSE_SCHEMA)
+    with pytest.raises(runner.SchemaViolation):
+        runner.validate({**good, "verdict": "probably_fine"}, DIAGNOSE_SCHEMA)
     with pytest.raises(runner.SchemaViolation):
         runner.validate({k: v for k, v in good.items() if k != "mechanism"}, DIAGNOSE_SCHEMA)
 

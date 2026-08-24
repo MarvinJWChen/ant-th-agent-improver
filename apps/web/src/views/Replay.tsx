@@ -217,22 +217,43 @@ function metricRows(r: ReplayRun) {
   return rows;
 }
 
+function firstDivergence(a: ArmRun, b: ArmRun): number {
+  const ta = a.steps.filter((s) => s.kind === "tool_call").map((s) => s.tool_name);
+  const tb = b.steps.filter((s) => s.kind === "tool_call").map((s) => s.tool_name);
+  const n = Math.max(ta.length, tb.length);
+  for (let i = 0; i < n; i++) if (ta[i] !== tb[i]) return i;
+  return -1;
+}
+
 function PairDetail({ pair }: { pair: TracePair }) {
+  const at = firstDivergence(pair.baseline, pair.candidate);
   return (
-    <Card title={`Trajectories — ${pair.trace_id}`} subtitle={pair.trajectory_diverged ? "The candidate took a different path." : "Both arms took the same path."}>
+    <Card
+      title={`Trajectories — ${pair.trace_id}`}
+      subtitle={
+        pair.trajectory_diverged
+          ? "The candidate is not a replay — it was re-executed, and from the highlighted call onward it did something different."
+          : "Both arms took the same path. The candidate changed nothing here."
+      }
+      right={
+        <Badge tone={pair.regression ? "danger" : pair.candidate_pass ? "ok" : "warn"} dot>
+          {pair.regression ? "regression" : pair.candidate_pass ? "candidate passes" : "candidate fails"}
+        </Badge>
+      }
+    >
       <SplitPane
         leftLabel="Baseline"
-        leftMeta={<Badge tone="neutral" mono>replayed</Badge>}
+        leftMeta={<Badge tone="neutral" mono>replayed from the recording</Badge>}
         rightLabel="Candidate"
         rightMeta={<Badge tone="accent" mono>re-executed</Badge>}
-        left={<ArmPanel arm={pair.baseline} />}
-        right={<ArmPanel arm={pair.candidate} />}
+        left={<ArmPanel arm={pair.baseline} divergeAt={at} />}
+        right={<ArmPanel arm={pair.candidate} divergeAt={at} />}
       />
     </Card>
   );
 }
 
-function ArmPanel({ arm }: { arm: ArmRun }) {
+function ArmPanel({ arm, divergeAt = -1 }: { arm: ArmRun; divergeAt?: number }) {
   return (
     <div className="space-y-3">
       <KeyValue
@@ -246,11 +267,19 @@ function ArmPanel({ arm }: { arm: ArmRun }) {
       <div>
         <div className="mb-1 text-[11px] uppercase tracking-wide text-muted">tool calls</div>
         <ol className="space-y-1">
-          {arm.steps.filter((s) => s.kind === "tool_call").map((s) => (
-            <li key={s.seq} className="font-mono text-[11px] text-secondary">
-              {s.tool_name}({Object.values(s.args ?? {}).join(", ")})
-            </li>
-          ))}
+          {arm.steps.filter((s) => s.kind === "tool_call").map((s, i) => {
+            const diverged = divergeAt >= 0 && i >= divergeAt;
+            return (
+              <li
+                key={s.seq}
+                className={`border-l-2 pl-2 font-mono text-[11px] ${
+                  diverged ? "border-accent text-primary" : "border-transparent text-secondary"
+                }`}
+              >
+                {s.tool_name}({Object.values(s.args ?? {}).join(", ")})
+              </li>
+            );
+          })}
           {arm.steps.filter((s) => s.kind === "tool_call").length === 0 && (
             <li className="text-[11px] text-muted">no tool calls</li>
           )}

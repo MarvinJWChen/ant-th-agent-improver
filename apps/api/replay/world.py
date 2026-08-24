@@ -59,6 +59,32 @@ def source_unchanged(clone: Clone) -> bool:
     return sha256_file(clone.source_path) == clone.source_sha256
 
 
+def content_hash(path: Path) -> str:
+    """Hash the world's *contents*, not its file bytes.
+
+    A byte hash identifies one particular file, which is what we want when
+    proving two arms got separate copies. It is the wrong thing for provenance:
+    a different SQLite build can lay out identical data differently, so a capture
+    made on a laptop would look stale in a container even though the world is the
+    same. Hashing the rows keeps provenance portable.
+    """
+    h = hashlib.sha256()
+    with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as conn:
+        tables = [
+            r[0]
+            for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            )
+        ]
+        for t in tables:
+            h.update(f"::{t}::".encode())
+            cols = [r[1] for r in conn.execute(f"PRAGMA table_info({t})")]
+            order = ", ".join(cols)
+            for row in conn.execute(f"SELECT {order} FROM {t} ORDER BY {order}"):
+                h.update("|".join("" if v is None else str(v) for v in row).encode())
+    return h.hexdigest()
+
+
 def open_clone(clone: Clone) -> sqlite3.Connection:
     conn = sqlite3.connect(clone.path)
     conn.row_factory = sqlite3.Row

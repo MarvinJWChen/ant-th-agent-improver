@@ -1,0 +1,35 @@
+{
+  "envelope_version": 2,
+  "capture_id": "6cef05424a13f4f8f363",
+  "created_at": "2026-08-24T21:29:11Z",
+  "key": {
+    "task": "diagnose_pattern",
+    "task_version": "2026-08-24.2",
+    "model": "claude-opus-5",
+    "prompt_hash": "052f8da961a0d3c2fe94369d8f97e813c805efc97924f9216796fec62971ba5e",
+    "inputs_hash": "1a966b002a8a583cc2250f4a31b7a4959d6ae82926fd919ecce2b03e85d70784",
+    "output_schema_hash": "11d883d436d5de9ba3bbc9e8b14dd9d71ee242a469f3096b20361845aedd23c3",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "verdict": "failure",
+    "root_cause": "The `send_email` tool contract is not safely retryable. Its declared input_schema exposes only {customer_id, template, order_id} — there is no idempotency parameter in the contract — and the tool returns a success-shaped body (`delivered: true`, a fresh `email_id`, `sent_at`) *together* with `ERROR=timeout`. The agent therefore cannot distinguish 'the send never landed' from 'the send landed but the acknowledgement was lost', and when it re-issues the call the backend has no declared key to dedupe on, so a second real email is emitted.",
+    "mechanism": "1) Happy path completes: order_lookup then refund_execute returns state=completed (tr_000017 event 6, tr_000050 event 6, tr_000513 event 6, tr_000104 event 6). 2) The agent sends the refund_confirmation email, as the system prompt directs ('Keep the customer updated by email when it makes sense, and let them know once things have been taken care of'). 3) That call hangs and comes back with ERROR=timeout after 8-15s (tr_000017 event 9: 8106ms; tr_000050 event 9: 8548ms; tr_000513 event 9: 14959ms; tr_000104 event 9: 9368ms) — while the payload simultaneously says delivered:true. 4) Reading an error, and under prompt pressure not to 'leave a refund request half-finished', the agent re-calls send_email verbatim at event 11. 5) Outcome then splits on something the schema does not govern: where the model happened to include an undeclared `idempotency_key` argument, the retry returned the *same* email_id (tr_000513: eml_000256 twice; tr_000104: eml_000047 twice) and no duplicate was sent; where it did not, the retry minted a *new* email (tr_000017: eml_000008 then eml_000009; tr_000050: eml_000022 then eml_000023) — a genuine duplicate external side effect, matching the cluster evidence of `send_email` called 2x against ord_10001 and ord_10002. 6) The agent then closes with a confident 'sent you a confirmation email' message.",
+    "why_it_recurs": "It is deterministic across 120 traces (n_timeouts=1.00, n_errors=1.00 in-cluster vs 0.00 cohort) because every element is structural, not stochastic: the first send_email on the refund-confirmation path reliably exceeds the timeout (log_max_tool_latency 9.33 vs cohort 5.97), the tool always answers a timeout with a success-shaped body, and the retry-on-unacknowledged-write reflex is the correct-looking behaviour for an agent told to make sure the customer is notified. Whether the duplicate actually lands depends only on whether the model spontaneously invents an `idempotency_key` argument that the schema never told it about — so safety is a coin flip the agent cannot be instructed into winning. The same unguarded retry reflex sits one step away from `refund_execute`, which is also `external` and also has no idempotency field, so the latent blast radius is duplicate money movement, not just duplicate mail.",
+    "cited_trace_ids": [
+      "tr_000017",
+      "tr_000050",
+      "tr_000513",
+      "tr_000104"
+    ],
+    "confidence": "high",
+    "remediation_kind": "code",
+    "remediation_summary": "Fix the tool contract, not the prompt. (1) Add `idempotency_key` to `send_email`'s input_schema as a required field with a description stating that repeating the same key is guaranteed to be a no-op returning the original email_id — the traces already prove the backend honours such a key (tr_000513, tr_000104 return the same email_id), it is simply undeclared, so make it mandatory and server-enforced. (2) Stop returning a success-shaped payload alongside ERROR=timeout: on timeout return an explicit indeterminate result (e.g. status=unknown, no delivered/email_id) plus a `check_email_status`/replay-safe read the agent can call, so the agent is never invited to infer 'it failed' from a delivered:true body. (3) Apply the identical treatment to `refund_execute`, which is external, has no idempotency field, and is exposed to the same retry reflex — a duplicate here is duplicate money out the door. Until (1)-(3) ship, gate agent-initiated retries of any `external` tool behind a mandatory idempotency key at the harness level rather than relying on prompt wording."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

@@ -115,7 +115,9 @@ def run_replay(
 
             b_arm, b_out = run_baseline(trace, run_id)
 
-            world_hash = b_arm.source_world_sha256
+            # Provenance uses the world's content hash so a capture stays valid
+            # across machines; the byte hashes below prove clone isolation.
+            world_hash = world_mod.content_hash(world_mod.paths.world_path(tid))
             key = cf.capture_key(
                 trace,
                 {**cand, "tools": cand_tools},
