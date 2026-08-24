@@ -130,3 +130,31 @@ def test_spa_deep_links_do_not_404(client):
         "/patterns/P1/improve",
     ):
         assert client.get(path).status_code == 200, f"{path} must serve the SPA shell"
+
+
+def test_reset_restores_the_baseline_without_destroying_evidence(client):
+    """Reset must undo the demo, not the work that produced it."""
+    import glob
+
+    from apps.api import paths, store
+
+    client.post("/api/patterns/P6/patch")
+    before_traces = store.corpus_stats().total_traces
+    before_captures = len(glob.glob(str(paths.CAPTURES / "*" / "*.json")))
+    assert len(store.list_configs()) > 1, "patch should have registered candidates"
+
+    res = client.post("/api/demo/reset")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["reset"] is True
+    assert body["active_version"] == "v1"
+
+    # the demo is back to a fresh state...
+    assert [c.version for c in store.list_configs()] == ["v1"]
+    assert store.active_config().version == "v1"
+    assert not list((paths.RUNS_DIR).rglob("*.sqlite")), "world clones must be torn down"
+
+    # ...and nothing expensive was destroyed.
+    assert store.corpus_stats().total_traces == before_traces
+    assert len(glob.glob(str(paths.CAPTURES / "*" / "*.json"))) == before_captures
+    assert client.post("/api/discovery/run").status_code == 200

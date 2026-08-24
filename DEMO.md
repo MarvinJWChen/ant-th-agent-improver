@@ -2,6 +2,14 @@
 
 Five screens, one forward action each. Roughly four minutes at a walking pace.
 
+## Resetting between rehearsals
+
+A run ends with a promoted configuration. **Reset demo** in the top-right bar
+restores the baseline: it drops the generated candidates, clears the replay runs
+and deletes the world clones, then reloads. It leaves the trace corpus, the
+frozen worlds and the captures alone — those took real inference to produce.
+Click once to arm, once to confirm.
+
 ## Before you start
 
 ```bash

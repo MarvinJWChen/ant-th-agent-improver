@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from apps.api import devdata, paths, services, store
-from apps.api.replay import engine
+from apps.api.replay import engine, world
 
 app = FastAPI(title="Agent Improver", version="0.1.0")
 
@@ -232,6 +232,47 @@ def replay_promote(run_id: str):
     if res is None:
         raise HTTPException(404, f"no such replay run: {run_id}")
     return res
+
+
+# ------------------------------------------------------------------ demo reset
+
+
+@app.post("/api/demo/reset")
+def reset_demo():
+    """Return the deployment to the state a fresh visitor sees.
+
+    Rehearsing the demo ends with a promoted config, and until now the only way
+    back to the baseline was a redeploy. This undoes exactly the things the
+    journey changes — the active config, the generated candidates, the replay
+    runs held in memory, and the world clones left on disk — and touches nothing
+    that took real inference or real time to produce: the trace corpus, the
+    frozen worlds and the captures are all left alone.
+    """
+    if not store.corpus_available():
+        raise HTTPException(409, "No corpus to reset. Seed it first.")
+
+    configs = store.reset_configs("v1")
+    runs_cleared = len(engine.RUNS)
+    engine.RUNS.clear()
+    clones_removed = world.purge_runs()
+
+    # Drop the memoised discovery so the next click genuinely recomputes.
+    try:
+        from apps.api.detect import pipeline  # noqa: PLC0415
+
+        pipeline._CACHE.clear()
+    except ImportError:
+        pass
+    services._KIND_CACHE.clear()
+
+    return {
+        "reset": True,
+        "active_version": store.active_config().version,
+        "candidates_removed": configs["candidates_removed"],
+        "replay_runs_cleared": runs_cleared,
+        "clone_dirs_removed": clones_removed,
+        "message": "Demo state reset to the baseline configuration.",
+    }
 
 
 # ------------------------------------------------------------------ static SPA

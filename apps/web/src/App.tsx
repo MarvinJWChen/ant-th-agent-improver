@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Shell } from "./components";
+import { ResetDemo, Shell } from "./components";
 import { Agents } from "./views/Agents";
 import { Overview } from "./views/Overview";
 import { Discovery } from "./views/Discovery";
@@ -28,11 +28,7 @@ function Inner() {
       agentName={onLanding ? undefined : DEFAULT_AGENT_ID}
       activePatternId={patternId}
       stepStatuses={journey.stepStatuses}
-      rightSlot={
-        <span className="font-mono text-muted">
-          {journey.promotedVersion ? `active: ${journey.promotedVersion}` : "active: v1"}
-        </span>
-      }
+      rightSlot={<ResetDemo activeVersion={journey.promotedVersion ?? "v1"} />}
     >
       <Routes>
         <Route path="/" element={<Agents />} />

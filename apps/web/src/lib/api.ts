@@ -289,6 +289,15 @@ export interface PromoteResponse {
   gate: GateResult;
 }
 
+export interface ResetResponse {
+  reset: boolean;
+  active_version: string;
+  candidates_removed: number;
+  replay_runs_cleared: number;
+  clone_dirs_removed: number;
+  message: string;
+}
+
 export interface Health {
   ok: boolean;
   live_available: boolean;
@@ -337,6 +346,7 @@ export const api = {
     post<ReplayRun>(`/replay/run?pattern_id=${patternId}&candidate_version=${candidate}&mode=${mode}`),
   replayGet: (runId: string) => req<ReplayRun>(`/replay/${runId}`),
   promote: (runId: string) => post<PromoteResponse>(`/replay/${runId}/promote`),
+  resetDemo: () => post<ResetResponse>("/demo/reset"),
 };
 
 export function fmtMs(ms: number): string {

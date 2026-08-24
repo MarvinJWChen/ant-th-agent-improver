@@ -27,6 +27,7 @@ export {
   type ProvenanceVerification,
   type ProvenanceHash,
 } from "./ProvenanceBadge";
+export { ResetDemo } from "./ResetDemo";
 export { Shell, type ShellProps } from "./Shell";
 export { JourneyStepper, type JourneyStepperProps } from "./JourneyStepper";
 export type { Tone } from "../lib/tone";

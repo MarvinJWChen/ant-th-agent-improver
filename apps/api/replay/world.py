@@ -54,6 +54,29 @@ def clone_world(trace_id: str, run_id: str, arm: str) -> Clone:
     )
 
 
+def purge_runs() -> int:
+    """Delete every clone produced by past replay runs.
+
+    Clones are copies of the frozen world, so in this demo they are synthetic —
+    but the same code against production traces would leave real customer data
+    on disk. Removing them is the teardown half of the isolation story, and it
+    is what the reset endpoint calls.
+
+    Only the runs directory is touched: the recorded worlds, the trace corpus
+    and the captures are never deleted.
+    """
+    if not paths.RUNS_DIR.exists():
+        return 0
+    removed = 0
+    for child in paths.RUNS_DIR.iterdir():
+        if child.is_dir():
+            shutil.rmtree(child, ignore_errors=True)
+            removed += 1
+        else:
+            child.unlink(missing_ok=True)
+    return removed
+
+
 def source_unchanged(clone: Clone) -> bool:
     """The invariant that makes replay safe to run against production recordings."""
     return sha256_file(clone.source_path) == clone.source_sha256
