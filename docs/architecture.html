@@ -1,0 +1,853 @@
+<title>Agent Improver Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap">
+
+<style>
+  :root {
+    --ground:   #F4F7F8;
+    --surface:  #FFFFFF;
+    --sunken:   #EAF0F2;
+    --ink:      #0D1519;
+    --body:     #22333C;
+    --muted:    #5C6B75;
+    --line:     #CBD8DD;
+    --line-soft:#DFE8EB;
+    --accent:   #1F6F8B;
+    --accent-soft: #E2EEF2;
+    --ok:       #1B7F4B;
+    --ok-soft:  #E0F2E7;
+    --warn:     #9C6100;
+    --warn-soft:#F8EEDB;
+    --danger:   #B3261E;
+    --danger-soft:#F9E3E1;
+
+    --measure: 68ch;
+    --step--1: 0.8125rem;
+    --step-0:  1.0625rem;
+    --step-1:  1.375rem;
+    --step-2:  1.75rem;
+    --step-3:  2.375rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #0E1418;
+      --surface:  #151E24;
+      --sunken:   #111A1F;
+      --ink:      #EAF1F4;
+      --body:     #C2D2DA;
+      --muted:    #8CA1AC;
+      --line:     #2B3A43;
+      --line-soft:#1E2A31;
+      --accent:   #5FB3CE;
+      --accent-soft: #16303B;
+      --ok:       #4ECB8B;
+      --ok-soft:  #102A1E;
+      --warn:     #E0A44A;
+      --warn-soft:#2C2213;
+      --danger:   #F08279;
+      --danger-soft:#31191A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #0E1418;
+    --surface:  #151E24;
+    --sunken:   #111A1F;
+    --ink:      #EAF1F4;
+    --body:     #C2D2DA;
+    --muted:    #8CA1AC;
+    --line:     #2B3A43;
+    --line-soft:#1E2A31;
+    --accent:   #5FB3CE;
+    --accent-soft: #16303B;
+    --ok:       #4ECB8B;
+    --ok-soft:  #102A1E;
+    --warn:     #E0A44A;
+    --warn-soft:#2C2213;
+    --danger:   #F08279;
+    --danger-soft:#31191A;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--body);
+    font-family: "IBM Plex Serif", Georgia, serif;
+    font-size: var(--step-0);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) clamp(1.25rem, 4vw, 3rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+  }
+
+  .col { max-width: var(--measure); }
+
+  h1, h2, h3, .eyebrow, .chip, figcaption, th, .mono {
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  h1 {
+    font-size: var(--step-3);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-size: var(--step-2);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: var(--step-1);
+    line-height: 1.3;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  p { margin: 0; }
+
+  .eyebrow {
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+
+  .lede {
+    font-size: 1.1875rem;
+    line-height: 1.6;
+    color: var(--body);
+  }
+
+  .mono, code {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+    font-variant-ligatures: none;
+  }
+
+  code {
+    background: var(--sunken);
+    border: 1px solid var(--line-soft);
+    border-radius: 3px;
+    padding: 0.05em 0.32em;
+    color: var(--ink);
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .fact {
+    background: var(--surface);
+    padding: 0.95rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .fact .n {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+
+  .fact .k {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .section-head { display: flex; flex-direction: column; gap: 0.6rem; max-width: var(--measure); }
+
+  figure {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.75rem 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .fig-scroll { overflow-x: auto; }
+
+  figure svg { display: block; width: 100%; min-width: 680px; height: auto; color: var(--muted); }
+
+  figcaption {
+    font-size: var(--step--1);
+    line-height: 1.55;
+    color: var(--muted);
+    border-top: 1px solid var(--line-soft);
+    padding-top: 0.9rem;
+  }
+  figcaption b { color: var(--ink); font-weight: 600; }
+
+  /* SVG primitives */
+  .node { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .node-sunk { fill: var(--sunken); stroke: var(--line); stroke-width: 1.5; }
+  .node-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+  .node-ok { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 1.5; }
+  .node-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.5; }
+  .node-danger { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1.5; }
+  .boundary { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 7 5; }
+
+  .t { font-family: "IBM Plex Sans", sans-serif; font-size: 13px; fill: var(--ink); }
+  .t-sm { font-family: "IBM Plex Sans", sans-serif; font-size: 11.5px; fill: var(--muted); }
+  .t-mono { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; fill: var(--body); }
+  .t-lbl { font-family: "IBM Plex Sans", sans-serif; font-size: 10.5px; fill: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  .t-acc { fill: var(--accent); }
+  .t-ok { fill: var(--ok); }
+  .t-warn { fill: var(--warn); }
+  .t-danger { fill: var(--danger); }
+
+  .edge { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+  .edge-acc { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+  .edge-danger { stroke: var(--danger); stroke-width: 1.6; fill: none; }
+  .edge-dash { stroke: var(--muted); stroke-width: 1.4; fill: none; stroke-dasharray: 5 4; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--step--1);
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.62rem 0.85rem;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  th {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+  }
+  td { color: var(--body); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+
+  .chip {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip-real { background: var(--ok-soft); color: var(--ok); }
+  .chip-cap  { background: var(--accent-soft); color: var(--accent); }
+  .chip-syn  { background: var(--sunken); color: var(--muted); }
+
+  .stack { display: flex; flex-direction: column; gap: 1rem; max-width: var(--measure); }
+
+  ul.clean { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  ul.clean li { padding-left: 0.2rem; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1.75rem;
+    font-size: var(--step--1);
+    color: var(--muted);
+    max-width: var(--measure);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a { transition: color 120ms ease; }
+  }
+  a { color: var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">System architecture</p>
+    <h1>Agent Improver</h1>
+    <p class="lede col">
+      Production traces from a customer-support refund agent, turned into discovered failure
+      patterns, an LLM diagnosis, a versioned configuration patch, and a counterfactual evaluation
+      against a frozen world — with a gate that refuses to promote on evidence it cannot verify.
+    </p>
+    <div class="facts">
+      <div class="fact"><span class="n">1,000</span><span class="k">seeded traces</span></div>
+      <div class="fact"><span class="n">1,000</span><span class="k">frozen worlds</span></div>
+      <div class="fact"><span class="n">6</span><span class="k">clusters found</span></div>
+      <div class="fact"><span class="n">1.00</span><span class="k">family recall</span></div>
+      <div class="fact"><span class="n">0.88</span><span class="k">cluster purity</span></div>
+      <div class="fact"><span class="n">155</span><span class="k">captures</span></div>
+    </div>
+  </header>
+
+  <!-- ============================================ 1. SYSTEM MAP -->
+  <section>
+    <div class="section-head">
+      <h2>One container, four subsystems</h2>
+      <p>
+        A single Docker image on Render: a Node stage builds the React SPA, a Python stage serves it
+        alongside the API. Everything the demo claims is computed inside that boundary. The Claude
+        API is reached from exactly two places, and the validation labels are reachable from none.
+      </p>
+    </div>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 960 560" role="img" aria-label="System map: a React SPA and FastAPI inside one container, calling four subsystems — detection, LLM and captures, replay, and the gate — over four SQLite stores. The Claude API sits outside the container and is called only by the LLM layer and the agent loop. The hidden label database sits outside the runtime entirely, reachable only by the offline validation script.">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"></path>
+            </marker>
+            <marker id="a1acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"></path>
+            </marker>
+          </defs>
+
+          <!-- container boundary -->
+          <rect x="24" y="70" width="672" height="466" rx="10" class="boundary"></rect>
+          <text x="40" y="92" class="t-lbl">One Docker container · Render</text>
+
+          <!-- SPA -->
+          <rect x="48" y="106" width="624" height="58" rx="6" class="node-acc"></rect>
+          <text x="64" y="130" class="t">React SPA — five-step journey</text>
+          <text x="64" y="150" class="t-mono">Agents › Agent › Discover › Investigate › Improve</text>
+
+          <!-- API -->
+          <rect x="48" y="196" width="624" height="46" rx="6" class="node"></rect>
+          <text x="64" y="224" class="t">FastAPI <tspan class="t-mono">/api/*</tspan> · serves the built SPA</text>
+
+          <line x1="360" y1="164" x2="360" y2="192" class="edge" marker-end="url(#a1)"></line>
+
+          <!-- subsystems -->
+          <rect x="48" y="284" width="146" height="72" rx="6" class="node"></rect>
+          <text x="62" y="308" class="t">Detection</text>
+          <text x="62" y="326" class="t-sm">features · signals</text>
+          <text x="62" y="342" class="t-sm">anomaly · clustering</text>
+
+          <rect x="207" y="284" width="146" height="72" rx="6" class="node"></rect>
+          <text x="221" y="308" class="t">LLM tasks</text>
+          <text x="221" y="326" class="t-sm">4 versioned tasks</text>
+          <text x="221" y="342" class="t-sm">provenance captures</text>
+
+          <rect x="366" y="284" width="146" height="72" rx="6" class="node"></rect>
+          <text x="380" y="308" class="t">Replay</text>
+          <text x="380" y="326" class="t-sm">clones · tool host</text>
+          <text x="380" y="342" class="t-sm">effect ledger · agent</text>
+
+          <rect x="525" y="284" width="147" height="72" rx="6" class="node"></rect>
+          <text x="539" y="308" class="t">Gate</text>
+          <text x="539" y="326" class="t-sm">4 checks · promote</text>
+          <text x="539" y="342" class="t-sm">patch boundary</text>
+
+          <line x1="121" y1="242" x2="121" y2="280" class="edge" marker-end="url(#a1)"></line>
+          <line x1="280" y1="242" x2="280" y2="280" class="edge" marker-end="url(#a1)"></line>
+          <line x1="439" y1="242" x2="439" y2="280" class="edge" marker-end="url(#a1)"></line>
+          <line x1="598" y1="242" x2="598" y2="280" class="edge" marker-end="url(#a1)"></line>
+
+          <!-- stores -->
+          <text x="48" y="404" class="t-lbl">SQLite · seeded deterministically at image build</text>
+
+          <rect x="48" y="416" width="146" height="60" rx="6" class="node-sunk"></rect>
+          <text x="62" y="440" class="t-mono">traces.db</text>
+          <text x="62" y="459" class="t-sm">1,000 traces</text>
+
+          <rect x="207" y="416" width="146" height="60" rx="6" class="node-sunk"></rect>
+          <text x="221" y="440" class="t-mono">worlds/*.sqlite</text>
+          <text x="221" y="459" class="t-sm">1,000 frozen worlds</text>
+
+          <rect x="366" y="416" width="146" height="60" rx="6" class="node-sunk"></rect>
+          <text x="380" y="440" class="t-mono">configs.db</text>
+          <text x="380" y="459" class="t-sm">versioned configs</text>
+
+          <rect x="525" y="416" width="147" height="60" rx="6" class="node-sunk"></rect>
+          <text x="539" y="440" class="t-mono">captures/</text>
+          <text x="539" y="459" class="t-sm">155 artifacts, in git</text>
+
+          <line x1="121" y1="356" x2="121" y2="412" class="edge" marker-end="url(#a1)"></line>
+          <line x1="280" y1="356" x2="280" y2="412" class="edge" marker-end="url(#a1)"></line>
+          <line x1="439" y1="356" x2="439" y2="412" class="edge" marker-end="url(#a1)"></line>
+          <line x1="598" y1="356" x2="598" y2="412" class="edge" marker-end="url(#a1)"></line>
+
+          <!-- Claude API, outside -->
+          <rect x="752" y="176" width="184" height="70" rx="6" class="node-acc"></rect>
+          <text x="768" y="202" class="t">Claude API</text>
+          <text x="768" y="221" class="t-mono">claude-opus-5</text>
+          <text x="768" y="238" class="t-sm">key from platform secret</text>
+
+          <path d="M 353 300 C 620 300 660 250 748 226" class="edge-acc" marker-end="url(#a1acc)"></path>
+          <text x="590" y="288" class="t-sm t-acc">live mode only</text>
+
+          <path d="M 512 306 C 640 306 680 268 748 240" class="edge-acc" marker-end="url(#a1acc)"></path>
+          <text x="590" y="332" class="t-sm t-acc">agent loop, candidate arm</text>
+
+          <!-- hidden labels, outside runtime -->
+          <rect x="752" y="392" width="184" height="64" rx="6" class="node-sunk" stroke-dasharray="6 4"></rect>
+          <text x="768" y="416" class="t-mono">hidden_labels.db</text>
+          <text x="768" y="435" class="t-sm">family labels</text>
+          <text x="768" y="450" class="t-sm">offline validation only</text>
+
+          <rect x="752" y="480" width="184" height="48" rx="6" class="node-sunk" stroke-dasharray="6 4"></rect>
+          <text x="768" y="500" class="t-mono">validate_detection</text>
+          <text x="768" y="517" class="t-sm">recall · purity · leakage</text>
+
+          <line x1="844" y1="456" x2="844" y2="476" class="edge-dash" marker-end="url(#a1)"></line>
+
+          <line x1="748" y1="424" x2="712" y2="424" class="edge-danger" stroke-dasharray="5 4"></line>
+          <circle cx="702" cy="424" r="11" fill="none" stroke="var(--danger)" stroke-width="1.6"></circle>
+          <line x1="695" y1="417" x2="709" y2="431" stroke="var(--danger)" stroke-width="1.6"></line>
+          <text x="640" y="404" class="t-sm t-danger" text-anchor="middle">no path</text>
+          <text x="640" y="419" class="t-sm t-danger" text-anchor="middle">from runtime</text>
+        </svg>
+      </div>
+      <figcaption>
+        The container holds everything the demo computes. <b>The Claude API is called from exactly two
+        places</b> — the LLM task runner in live mode, and the agent loop driving the candidate arm.
+        <b>The label database sits outside the runtime entirely</b>: no module under <span class="mono">apps/api/</span>
+        names it or can construct a path to it, which a test asserts by grepping for quoted references.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================ 2. DISCOVERY -->
+  <section>
+    <div class="section-head">
+      <h2>Discovery: family-agnostic by construction</h2>
+      <p>
+        No evaluator anywhere in this pipeline mentions refunds, emails, or SLAs. The seeded failure
+        families have to be recovered from behaviour alone — which is the only reason recovering them
+        proves anything. Labels enter once, at the end, offline.
+      </p>
+    </div>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 960 420" role="img" aria-label="Discovery pipeline: 1,000 traces are featurised, then flagged by four generic observable signals and a generic anomaly model. Their union of 425 traces is clustered into six behaviours, grouped by remediation kind. Hidden labels enter only afterwards, at the offline validation step.">
+          <defs>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"></path>
+            </marker>
+            <marker id="a2acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"></path>
+            </marker>
+          </defs>
+
+          <!-- traces -->
+          <rect x="16" y="120" width="118" height="72" rx="6" class="node-sunk"></rect>
+          <text x="30" y="146" class="t">Traces</text>
+          <text x="30" y="166" class="t-mono">1,000</text>
+          <text x="30" y="183" class="t-sm">10,006 events</text>
+
+          <line x1="134" y1="156" x2="172" y2="156" class="edge" marker-end="url(#a2)"></line>
+
+          <!-- featurise -->
+          <rect x="176" y="112" width="126" height="88" rx="6" class="node"></rect>
+          <text x="190" y="138" class="t">Featurise</text>
+          <text x="190" y="157" class="t-sm">generic shape only</text>
+          <text x="190" y="173" class="t-sm">turns · latency · retries</text>
+          <text x="190" y="189" class="t-sm">tool-event n-grams</text>
+
+          <!-- two branches -->
+          <path d="M 302 140 C 330 140 330 84 356 84" class="edge" marker-end="url(#a2)"></path>
+          <path d="M 302 172 C 330 172 330 232 356 232" class="edge" marker-end="url(#a2)"></path>
+
+          <rect x="360" y="46" width="180" height="76" rx="6" class="node"></rect>
+          <text x="374" y="70" class="t">Observable signals</text>
+          <text x="374" y="88" class="t-sm">didn't finish · repeated effect</text>
+          <text x="374" y="104" class="t-sm">redundant effect · retry</text>
+          <text x="522" y="70" class="t-mono" text-anchor="end">402</text>
+
+          <rect x="360" y="194" width="180" height="76" rx="6" class="node"></rect>
+          <text x="374" y="218" class="t">Anomaly model</text>
+          <text x="374" y="236" class="t-sm">incompletion · peer cost</text>
+          <text x="374" y="252" class="t-sm">shape isolation</text>
+          <text x="522" y="218" class="t-mono" text-anchor="end">220</text>
+
+          <!-- union -->
+          <path d="M 540 84 C 566 84 566 140 592 140" class="edge" marker-end="url(#a2)"></path>
+          <path d="M 540 232 C 566 232 566 172 592 172" class="edge" marker-end="url(#a2)"></path>
+
+          <rect x="596" y="116" width="122" height="80" rx="6" class="node-warn"></rect>
+          <text x="610" y="141" class="t">Review queue</text>
+          <text x="610" y="162" class="t-mono">425</text>
+          <text x="610" y="180" class="t-sm">union · high recall</text>
+
+          <line x1="718" y1="156" x2="756" y2="156" class="edge" marker-end="url(#a2)"></line>
+
+          <!-- clustering -->
+          <rect x="760" y="112" width="184" height="88" rx="6" class="node-acc"></rect>
+          <text x="774" y="138" class="t">Clustering</text>
+          <text x="774" y="157" class="t-sm">ward · elbow k-selection</text>
+          <text x="774" y="173" class="t-sm">k = 6 · silhouette 0.66</text>
+          <text x="774" y="191" class="t-sm">descriptions derived</text>
+
+          <!-- grouped output -->
+          <line x1="852" y1="200" x2="852" y2="238" class="edge" marker-end="url(#a2)"></line>
+          <rect x="760" y="242" width="184" height="94" rx="6" class="node"></rect>
+          <text x="774" y="264" class="t-lbl">Grouped by remediation</text>
+          <text x="774" y="286" class="t-sm">configuration</text>
+          <text x="930" y="286" class="t-mono" text-anchor="end">3</text>
+          <text x="774" y="306" class="t-sm">tool code</text>
+          <text x="930" y="306" class="t-mono" text-anchor="end">2</text>
+          <text x="774" y="326" class="t-sm">not a problem</text>
+          <text x="930" y="326" class="t-mono" text-anchor="end">1</text>
+
+          <!-- offline validation -->
+          <rect x="16" y="300" width="450" height="90" rx="6" class="node-sunk" stroke-dasharray="6 4"></rect>
+          <text x="32" y="324" class="t-lbl">Offline only — never in the runtime path</text>
+          <text x="32" y="348" class="t-mono">hidden_labels.db</text>
+          <text x="32" y="370" class="t-sm">recall 1.00 on all three families · weighted purity 0.88 · leakage assertion</text>
+
+          <path d="M 466 340 C 560 340 600 320 756 300" class="edge-dash" marker-end="url(#a2)"></path>
+          <text x="600" y="366" class="t-sm">grades the result, never informs it</text>
+        </svg>
+      </div>
+      <figcaption>
+        Both signals are deliberately high-recall, so the 425 flagged traces are a <b>review queue,
+        not a failure count</b> — separating real failures from rare-but-correct behaviour is the
+        clustering and diagnosis step's job. An ablation confirms the anomaly model alone still
+        recovers two of the three families at recall 1.00 with every observable signal removed.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================ 3. REPLAY -->
+  <section>
+    <div class="section-head">
+      <h2>Replay: two clones, one frozen world</h2>
+      <p>
+        The safety argument rests on one mechanic. An arm never touches the recorded world — it gets a
+        byte-for-byte copy, and every read and write lands on that copy. The baseline replays what
+        production actually did; the candidate is re-executed, because a changed configuration may
+        take a different path.
+      </p>
+    </div>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 960 560" role="img" aria-label="Replay isolation: one frozen world is copied into two independent clones. The baseline arm replays the recorded trajectory; the candidate arm re-executes the patched configuration through the Claude agent loop. Both dispatch through a tool host that reads and writes only the clone, shadows external effects without executing them, and aborts on any unregistered tool. Metrics are computed from each clone's final state and its effect ledger, then handed to a four-check gate.">
+          <defs>
+            <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"></path>
+            </marker>
+            <marker id="a3d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--danger)"></path>
+            </marker>
+            <marker id="a3w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--warn)"></path>
+            </marker>
+          </defs>
+
+          <!-- frozen world -->
+          <rect x="332" y="16" width="256" height="62" rx="6" class="node-sunk"></rect>
+          <text x="348" y="40" class="t">Frozen world <tspan class="t-mono">tr_000535</tspan></text>
+          <text x="348" y="60" class="t-sm">read-only · verified unchanged after both arms</text>
+
+          <path d="M 400 78 C 400 106 214 100 214 128" class="edge" marker-end="url(#a3)"></path>
+          <path d="M 520 78 C 520 106 706 100 706 128" class="edge" marker-end="url(#a3)"></path>
+          <text x="268" y="106" class="t-sm" text-anchor="middle">byte copy</text>
+          <text x="652" y="106" class="t-sm" text-anchor="middle">byte copy</text>
+
+          <!-- clones -->
+          <rect x="96" y="132" width="236" height="46" rx="6" class="node"></rect>
+          <text x="110" y="152" class="t">Clone A</text>
+          <text x="110" y="169" class="t-sm">same hash at start · own file</text>
+
+          <rect x="588" y="132" width="236" height="46" rx="6" class="node"></rect>
+          <text x="602" y="152" class="t">Clone B</text>
+          <text x="602" y="169" class="t-sm">same hash at start · own file</text>
+
+          <!-- arms -->
+          <rect x="96" y="200" width="236" height="72" rx="6" class="node"></rect>
+          <text x="110" y="224" class="t">Baseline arm</text>
+          <text x="110" y="243" class="t-sm">replays the recorded trajectory</text>
+          <text x="110" y="260" class="t-sm">no model involved · reproducible</text>
+
+          <rect x="588" y="200" width="236" height="72" rx="6" class="node-acc"></rect>
+          <text x="602" y="224" class="t">Candidate arm</text>
+          <text x="602" y="243" class="t-sm">re-executed under the patch</text>
+          <text x="602" y="260" class="t-sm">Claude agent loop · may diverge</text>
+
+          <line x1="214" y1="178" x2="214" y2="196" class="edge" marker-end="url(#a3)"></line>
+          <line x1="706" y1="178" x2="706" y2="196" class="edge" marker-end="url(#a3)"></line>
+
+          <!-- tool host -->
+          <rect x="290" y="300" width="380" height="112" rx="6" class="node"></rect>
+          <text x="306" y="324" class="t">Tool host — the only dispatch path</text>
+          <text x="306" y="348" class="t-mono t-ok">read</text>
+          <text x="392" y="348" class="t-sm">executes against the clone</text>
+          <text x="306" y="370" class="t-mono t-ok">shadow_write</text>
+          <text x="392" y="370" class="t-sm">writes the clone, ledgered</text>
+          <text x="306" y="392" class="t-mono t-warn">external</text>
+          <text x="392" y="392" class="t-sm">never executed · recorded SHADOWED</text>
+
+          <path d="M 214 272 C 214 300 276 320 286 330" class="edge" marker-end="url(#a3)"></path>
+          <path d="M 706 272 C 706 300 644 320 674 330" class="edge" marker-end="url(#a3)"></path>
+
+          <!-- fail closed -->
+          <rect x="700" y="318" width="244" height="52" rx="6" class="node-danger"></rect>
+          <text x="716" y="340" class="t t-danger">Unregistered tool</text>
+          <text x="716" y="358" class="t-sm t-danger">run aborts · BLOCKED_UNKNOWN_EFFECT</text>
+          <line x1="670" y1="344" x2="696" y2="344" class="edge-danger" marker-end="url(#a3d)"></line>
+
+          <!-- outside world -->
+          <rect x="16" y="318" width="244" height="52" rx="6" class="node-sunk" stroke-dasharray="6 4"></rect>
+          <text x="32" y="340" class="t-sm">Payment processor · mail service</text>
+          <text x="32" y="358" class="t-sm t-warn">no client, socket or credential exists</text>
+          <line x1="286" y1="392" x2="266" y2="380" class="edge" stroke="var(--warn)" stroke-dasharray="5 4" marker-end="url(#a3w)"></line>
+
+          <!-- ledger + metrics -->
+          <rect x="290" y="436" width="184" height="60" rx="6" class="node"></rect>
+          <text x="304" y="458" class="t">Effect Ledger</text>
+          <text x="304" y="477" class="t-sm">every attempt, incl. refusals</text>
+
+          <rect x="486" y="436" width="184" height="60" rx="6" class="node"></rect>
+          <text x="500" y="458" class="t">Metrics</text>
+          <text x="500" y="477" class="t-sm">from clone state + ledger</text>
+
+          <line x1="382" y1="412" x2="382" y2="432" class="edge" marker-end="url(#a3)"></line>
+          <line x1="474" y1="466" x2="482" y2="466" class="edge" marker-end="url(#a3)"></line>
+
+          <rect x="700" y="436" width="244" height="60" rx="6" class="node-ok"></rect>
+          <text x="716" y="458" class="t">Promotion gate — 4 checks</text>
+          <text x="716" y="477" class="t-sm">target · controls · effects · provenance</text>
+          <line x1="670" y1="466" x2="696" y2="466" class="edge" marker-end="url(#a3)"></line>
+
+          <text x="480" y="530" class="t-sm" text-anchor="middle">Both arms are scored by the same function reading the same kind of artifact — otherwise they would not be comparable.</text>
+        </svg>
+      </div>
+      <figcaption>
+        Clones start identical and end different, and both hashes are published beside the unchanged
+        source hash. <b>Zero external calls are ever executed</b> — that number is measured from the
+        ledger, not asserted. A tool the registry does not know about aborts the run rather than
+        being guessed at, because an undeclared blast radius cannot be bounded.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================ 4. PROVENANCE -->
+  <section>
+    <div class="section-head">
+      <h2>Provenance: what makes a capture evidence</h2>
+      <p>
+        Cached mode is the default so the demo runs with no API key. That is only defensible if a
+        cached output can prove it came from a real run of the same program. Eleven fields are hashed
+        at capture time and recomputed at load time.
+      </p>
+    </div>
+
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 960 400" role="img" aria-label="Provenance: a capture stores eleven hashed fields describing the execution that produced it. At load time each is recomputed from live state and compared. An exact match serves the capture as verified; any mismatch marks it stale, and for replay evidence the run refuses to start at all.">
+          <defs>
+            <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"></path>
+            </marker>
+            <marker id="a4ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ok)"></path>
+            </marker>
+            <marker id="a4d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--danger)"></path>
+            </marker>
+          </defs>
+
+          <rect x="16" y="40" width="270" height="300" rx="6" class="node"></rect>
+          <text x="32" y="66" class="t-lbl">Capture envelope, in git</text>
+          <text x="32" y="94" class="t-mono">task · task_version</text>
+          <text x="32" y="118" class="t-mono">model</text>
+          <text x="32" y="142" class="t-mono">prompt_hash</text>
+          <text x="32" y="166" class="t-mono">inputs_hash</text>
+          <text x="32" y="190" class="t-mono">output_schema_hash</text>
+          <text x="32" y="214" class="t-mono">agent_config_hash</text>
+          <text x="32" y="238" class="t-mono">tools_hash</text>
+          <text x="32" y="262" class="t-mono">corpus_hash</text>
+          <text x="32" y="286" class="t-mono">world_hash</text>
+          <text x="32" y="310" class="t-mono">loop_version</text>
+          <text x="32" y="330" class="t-sm">+ the schema-validated output</text>
+
+          <line x1="286" y1="190" x2="336" y2="190" class="edge" marker-end="url(#a4)"></line>
+          <text x="311" y="178" class="t-sm" text-anchor="middle">load</text>
+
+          <rect x="340" y="146" width="216" height="88" rx="6" class="node-acc"></rect>
+          <text x="356" y="172" class="t">Recompute &amp; compare</text>
+          <text x="356" y="191" class="t-sm">every field, from live state</text>
+          <text x="356" y="209" class="t-sm">world hash is content-based,</text>
+          <text x="356" y="225" class="t-sm">so it survives a rebuild</text>
+
+          <path d="M 556 172 C 604 172 620 120 668 120" class="edge" stroke="var(--ok)" marker-end="url(#a4ok)"></path>
+          <path d="M 556 210 C 604 210 620 268 668 268" class="edge-danger" marker-end="url(#a4d)"></path>
+          <text x="612" y="112" class="t-sm t-ok" text-anchor="middle">exact</text>
+          <text x="612" y="292" class="t-sm t-danger" text-anchor="middle">any mismatch</text>
+
+          <rect x="672" y="82" width="272" height="76" rx="6" class="node-ok"></rect>
+          <text x="688" y="106" class="t t-ok">Verified</text>
+          <text x="688" y="126" class="t-sm">served as the captured result</text>
+          <text x="688" y="144" class="t-sm">gate check 4 passes</text>
+
+          <rect x="672" y="230" width="272" height="102" rx="6" class="node-danger"></rect>
+          <text x="688" y="254" class="t t-danger">Stale</text>
+          <text x="688" y="274" class="t-sm">diagnosis: shown, marked stale</text>
+          <text x="688" y="292" class="t-sm">replay: the run refuses to start</text>
+          <text x="688" y="314" class="t-sm t-danger">promotion is impossible either way</text>
+        </svg>
+      </div>
+      <figcaption>
+        The asymmetry at the bottom right is deliberate. A stale <em>diagnosis</em> is still worth
+        showing with a warning; a stale <em>counterfactual run</em> is not, because displaying another
+        trace's trajectory as this one's would be exactly the fixture-masquerading-as-evidence failure
+        the design exists to prevent. <b>Bump a task version and every capture stops validating</b> —
+        that is the intended behaviour, and a test asserts it field by field.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ============================================ 5. HONESTY MATRIX -->
+  <section>
+    <div class="section-head">
+      <h2>What is real, what is recorded, what is synthetic</h2>
+      <p>
+        The distinction the demo lives or dies on. Everything that could be quietly faked is computed
+        on the request that asks for it.
+      </p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Component</th><th style="width:8.5rem">Status</th><th>How you can tell</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Trace corpus and frozen worlds</td>
+            <td><span class="chip chip-syn">Synthetic</span></td>
+            <td>Deterministic generator, seed 1337. Labelled as synthetic in the UI.</td>
+          </tr>
+          <tr>
+            <td>Featurisation, signals, anomaly, clustering</td>
+            <td><span class="chip chip-real">Real</span></td>
+            <td>Re-run detection recomputes it in about 0.6&nbsp;s.</td>
+          </tr>
+          <tr>
+            <td>Diagnoses, proposals, config patches</td>
+            <td><span class="chip chip-cap">Captured</span></td>
+            <td>Real <span class="mono">claude-opus-5</span> runs of the same task module the live button calls.</td>
+          </tr>
+          <tr>
+            <td>Baseline replay</td>
+            <td><span class="chip chip-real">Real</span></td>
+            <td>Deterministic execution against a clone; no model involved.</td>
+          </tr>
+          <tr>
+            <td>Counterfactual run</td>
+            <td><span class="chip chip-cap">Captured</span></td>
+            <td>A captured live run's trajectory, re-executed against a fresh clone.</td>
+          </tr>
+          <tr>
+            <td>Effect Ledger, metrics, gate, promotion</td>
+            <td><span class="chip chip-real">Real</span></td>
+            <td>Always computed from clone state — never stored, never fixtured.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================ 6. GUARDS -->
+  <section>
+    <div class="section-head">
+      <h2>The guards that keep it honest</h2>
+      <p>
+        Five checks, each protecting one demonstrated claim. Three of them exist because they caught
+        a real bug during the build.
+      </p>
+    </div>
+
+    <div class="stack">
+      <ul class="clean">
+        <li>
+          <b>Label leakage.</b> No runtime module quotes the label table or names a seeded family.
+          Build output is excluded, since it is generated rather than authored.
+        </li>
+        <li>
+          <b>Capture-input determinism.</b> Launches a second interpreter and compares hashes. Added
+          after set-iteration order made pattern signatures vary between processes, silently
+          invalidating every capture.
+        </li>
+        <li>
+          <b>Capture freshness.</b> Asserts every pattern still has a verified diagnosis. Added after
+          widening a contract by one field changed the hashed inputs and dropped the whole app back
+          to fixtures.
+        </li>
+        <li>
+          <b>Replay safety.</b> Distinct clone paths, identical start hashes, source world unchanged,
+          external effects shadowed, unregistered tools blocked — plus an assertion that no network
+          client exists anywhere in the replay package.
+        </li>
+        <li>
+          <b>Gate behaviour.</b> Proves the gate blocks on a control regression, on an unsafe effect,
+          and on stale provenance — not just that it passes when everything is fine.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Python 3.12 · FastAPI · scikit-learn · SQLite · React 18 · TypeScript · Vite · Tailwind ·
+    one Docker image on Render, with the API key held as a platform secret and never in git.
+  </footer>
+
+</div>
