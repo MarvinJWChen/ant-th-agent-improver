@@ -24,7 +24,7 @@ export function Replay() {
   const health = useAsync(() => api.health(), []);
   const run = useAction<ReplayRun>();
   const promote = useAction<PromoteResponse>();
-  const [candidate, setCandidate] = useState("v2-candidate-b");
+  const [candidate, setCandidate] = useState<string | null>(null);
   const [openPair, setOpenPair] = useState<string | null>(null);
 
   const liveOK = Boolean((health.data as { live_available?: boolean } | null)?.live_available);
@@ -33,7 +33,11 @@ export function Replay() {
   if (configs.loading) return <Loading label="Loading configurations" />;
   if (configs.error) return <Failed message={configs.error} />;
 
-  const candidates = (configs.data ?? []).filter((c) => c.version.startsWith("v2-candidate"));
+  const prefix = `v2-${patternId.toLowerCase()}-`;
+  const candidates = (configs.data ?? []).filter((c) => c.version.startsWith(prefix));
+  // Default to the second candidate: the generator is asked for a broad option
+  // first and a surgical one second, and the surgical one is the interesting run.
+  const selected = candidate ?? candidates[candidates.length - 1]?.version ?? "";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
@@ -44,16 +48,19 @@ export function Replay() {
       />
 
       <Card title="Choose a candidate" subtitle="Both were generated from the same diagnosis.">
+        {candidates.length === 0 && (
+          <p className="text-sm text-muted">
+            No candidate configurations exist for this pattern yet. Generate a config patch on the
+            pattern page first.
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
-          {(candidates.length ? candidates : [
-            { version: "v2-candidate-a", notes: "broad" } as AgentConfig,
-            { version: "v2-candidate-b", notes: "surgical" } as AgentConfig,
-          ]).map((c) => (
+          {candidates.map((c) => (
             <button
               key={c.version}
               onClick={() => setCandidate(c.version)}
               className={`rounded border px-3 py-2 text-left transition-colors ${
-                candidate === c.version
+                selected === c.version
                   ? "border-accent bg-accent-muted"
                   : "border-hairline hover:border-hairline-strong"
               }`}
@@ -70,7 +77,7 @@ export function Replay() {
               label: "Use captured counterfactual runs",
               loading: run.pending === "captured",
               onClick: async () => {
-                const res = await run.run("captured", () => api.replay(patternId, candidate, "captured"));
+                const res = await run.run("captured", () => api.replay(patternId, selected, "captured"));
                 if (res) journey.add("replayed", patternId);
               },
             }}
@@ -80,7 +87,7 @@ export function Replay() {
               disabled: !liveOK,
               disabledReason: "No ANTHROPIC_API_KEY is configured on this deployment.",
               onClick: async () => {
-                const res = await run.run("live", () => api.replay(patternId, candidate, "live"));
+                const res = await run.run("live", () => api.replay(patternId, selected, "live"));
                 if (res) journey.add("replayed", patternId);
               },
             }}

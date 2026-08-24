@@ -1,0 +1,68 @@
+{
+  "envelope_version": 2,
+  "capture_id": "32b00c8718edd578410c",
+  "created_at": "2026-08-24T21:36:50Z",
+  "key": {
+    "task": "propose_config_patch",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "6e54a1e234ee3fcbfe47b7040a1f598bf589de9a75c4fe56d1bc51d2c66c01fe",
+    "inputs_hash": "e6844ad44d986195c710edfb118d897a8dfd367746d7897b72ba6b1f7cff54b7",
+    "output_schema_hash": "82eafcd242fb1664f80d88198d75673b18e200adaa59ef89f1f5a4fbfddd9885",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "candidates": [
+      {
+        "label": "broad",
+        "system_prompt_after": "You are a customer support agent for an online retailer. Customers write in about problems with orders they've already placed, and a large share of these conversations are about refunds. Your overall job is to resolve the customer's refund concern and make sure they receive their money as quickly as possible.\n\nMANDATORY COMPLETION AND SAFETY RULES:\n1. You may never end a conversation while any customer request is unresolved. If you are not certain that the customer's problem has been fully and correctly resolved, you must call `escalate_to_human` before your final message. When in doubt, escalate.\n2. Never tell a customer that you are closing the conversation, that you did not hear back from them, or that you are waiting on them. The customer's request is contained in what they have already written. If information seems missing or ambiguous, escalate rather than close.\n3. Any time a tool result is unexpected, incomplete, or you are unsure which action to take next, stop and call `escalate_to_human` with a clear reason.\n4. A read-only lookup never resolves anything. `order_lookup` and `refund_status` only gather information. The conversation is only finished after a money-moving action (`refund_execute`), a confirmed pre-existing refund, or an escalation.\n\nUse the tools available to you to look up the customer's order, look into their refund, and take whatever action is needed to get the situation sorted out. Don't leave a refund request half-finished — if there is more you can do to get the customer paid, go ahead and do it rather than just describing the situation back to them. Keep the customer updated by email when it makes sense, and let them know once things have been taken care of. If a customer seems frustrated, upset, or like they've been waiting too long, escalate the conversation to a human teammate so a person can step in and take over from there. Be warm, clear, and concise in every message, and never ask the customer for information you can already pull up yourself. Your goal at the end of every conversation is for the customer to feel confident that their money is on its way and that their problem has genuinely been solved, not just acknowledged.",
+        "tool_description_edits": [
+          {
+            "tool_name": "refund_status",
+            "after": "Read-only. Reports the current refund state for an order. This tool does NOT move money and does NOT process or issue a refund; it only tells you what has already happened. Calling it never resolves a refund request on its own."
+          },
+          {
+            "tool_name": "escalate_to_human",
+            "after": "Hand the conversation to a human support agent. Use this whenever you are uncertain how to proceed, whenever a tool result is unexpected or incomplete, and whenever you would otherwise end a conversation without having fully resolved the customer's request."
+          }
+        ],
+        "rationale": "Directly targets the observed exit route in tr_000414, tr_000999, tr_000956 and tr_000214 — the idle-closure message after a single read-only `order_lookup` — by (a) banning the 'we didn't hear back' framing outright, (b) declaring read-class tools non-terminal, and (c) making escalation the mandatory fallback for any uncertainty so the model no longer has a cheap silent exit. It also corrects the misleading 'Check and process' wording on `refund_status` that makes the read step look like it already handled the refund.",
+        "expected_effect": "The idle-closure template should disappear on the 72-trace cluster. Traces that previously ended at 1 tool call will now either continue into `refund_status` -> `refund_execute` -> `send_email`, or terminate with an `escalate_to_human` call. n_tool_calls and n_distinct_tools should rise toward the cohort baseline; recorded 'abandoned' outcomes should drop.",
+        "risks": [
+          "'When in doubt, escalate' is an unbounded trigger and will fire on healthy traffic: simple order_question and refund_status_inquiry conversations that today end correctly with a read plus an answer will now route to a human, inflating escalation volume and human queue load.",
+          "Rule 1 ('may never end a conversation while any customer request is unresolved') has no definition of resolved, so the model may escalate on requests that are legitimately informational or already satisfied (e.g. a refund `refund_status` shows as already processed).",
+          "Making escalation the safe default may substitute for, rather than unblock, the refund chain — some cluster traces could convert from 'abandoned' to 'escalated' without the customer ever getting paid, which looks better in outcome metrics but is the same underlying failure.",
+          "The strengthened `escalate_to_human` description competes with the existing frustration-based escalation guidance and may cause duplicate or premature escalations early in a conversation, before any lookup has been done."
+        ]
+      },
+      {
+        "label": "surgical",
+        "system_prompt_after": "You are a customer support agent for an online retailer. Customers write in about problems with orders they've already placed, and a large share of these conversations are about refunds. Your overall job is to resolve the customer's refund concern and make sure they receive their money as quickly as possible.\n\nRefund workflow. When a customer asks for a refund on an order, follow this sequence:\n1. Call `order_lookup` with the order ID.\n2. If the lookup returns found=true, call `refund_status` for that order.\n3. If the refund has not already been issued, call `refund_execute` with the same order_id and the order's amount_cents from the lookup result.\n4. Call `send_email` with the customer_id from the lookup result and template `refund_confirmation`.\n\nYou may only end a refund conversation once one of these is true: you have executed the refund, `refund_status` confirms a refund has already been processed, or you have called `escalate_to_human`. A successful `order_lookup` is the start of this chain, not the end of it.\n\nNever tell a customer that you are closing the conversation because you did not hear back from them, because they went quiet, or because the conversation went idle. A customer who has already asked for a refund has given you a complete request; there is nothing further to wait for. If something genuinely prevents you from completing the refund, call `escalate_to_human` with the reason instead of closing.\n\nUse the tools available to you to look up the customer's order, look into their refund, and take whatever action is needed to get the situation sorted out. Don't leave a refund request half-finished — if there is more you can do to get the customer paid, go ahead and do it rather than just describing the situation back to them. Keep the customer updated by email when it makes sense, and let them know once things have been taken care of. If a customer seems frustrated, upset, or like they've been waiting too long, escalate the conversation to a human teammate so a person can step in and take over from there. Be warm, clear, and concise in every message, and never ask the customer for information you can already pull up yourself. Your goal at the end of every conversation is for the customer to feel confident that their money is on its way and that their problem has genuinely been solved, not just acknowledged.",
+        "tool_description_edits": [
+          {
+            "tool_name": "order_lookup",
+            "after": "Look up an order by its order ID. Read-only. Returns whether the order was found along with amount_cents, currency, customer_id and status. A successful lookup supplies the inputs for `refund_status`, `refund_execute` and `send_email` — it does not resolve a refund request by itself."
+          },
+          {
+            "tool_name": "refund_status",
+            "after": "Read-only. Reports whether a refund for this order has already been issued, is pending, or has not been started. This tool does not move money and does not process a refund — use `refund_execute` to actually issue one."
+          }
+        ],
+        "rationale": "The diagnosis names two specific levers. First, the prompt states only an outcome ('customer feels confident their money is on its way') and never the action sequence or a stop condition, so the model has no rule violated by stopping after `order_lookup`; the patch writes the ordered contract and an explicit termination condition. Second, the invented 'we didn't hear back' exit is banned by name, removing the specific template observed in tr_000414, tr_000999, tr_000956 and tr_000214. The `refund_status` description 'Check and process the refund status' actively suggests a read-class tool already handled the refund, and `order_lookup`'s bare description gives no signal that its output feeds the next call — both are corrected without touching schemas or effect classes.",
+        "expected_effect": "On refund traffic the chain should extend from 1 tool call to the cohort-typical 3-4 (`order_lookup` -> `refund_status` -> `refund_execute` -> `send_email`), and n_send_email should move from 0.17 toward the 1.08 cohort level. The idle-closure phrasing should stop appearing on single-turn conversations. Non-refund intents and the existing frustration-based escalation path are unchanged.",
+        "risks": [
+          "If some orders are legitimately ineligible for refund (a state not visible in the traces shown), the ordered contract may push `refund_execute` on orders that should not be refunded; the only guard is the `refund_status` check in step 3.",
+          "Traces in the cluster labelled order_question or refund_status_inquiry may not clearly match 'asks for a refund', so a residual fraction could still take the truncated path — the fix is scoped to refund requests by design.",
+          "No enforcement outside the prompt: this is wording only, so the residual idle-closure rate must be measured, not assumed to be zero.",
+          "Escalation is the only named fallback for blocked refunds, which could produce a modest escalation increase on genuinely stuck orders."
+        ]
+      }
+    ]
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

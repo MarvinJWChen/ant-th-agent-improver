@@ -22,6 +22,16 @@ EMAIL_TOOL_SOURCE = Path(__file__).resolve().parents[2] / "fixtures/agent_source
 EXEMPLARS = 4
 
 
+def candidate_version(pattern_id: str, index: int) -> str:
+    """Candidate versions are namespaced per pattern.
+
+    Two patterns can each produce candidates, and a shared name would mean the
+    second patch silently overwrote the first — including the config a captured
+    counterfactual run was made against.
+    """
+    return f"v2-{pattern_id.lower()}-{'ab'[index]}"
+
+
 def _hashes() -> tuple[dict[str, Any], str, str, str]:
     cfg = store.get_config("v1").model_dump()
     tools = [
@@ -168,7 +178,8 @@ def patch(pattern_id: str, mode: str) -> dict[str, Any]:
         fx["provenance"] = _fixture_provenance("propose_config_patch", mode, str(e)).model_dump()
         bare = [{k: t[k] for k in ("name", "description", "input_schema")} for t in cfg["tools"]]
         base_cfg = {"model": cfg["model"], "system_prompt": cfg["system_prompt"], "tools": bare}
-        for c in fx["candidates"]:
+        for i, c in enumerate(fx["candidates"]):
+            c["candidate_version"] = candidate_version(pattern_id, i)
             patched, report = apply_patch(
                 base_cfg,
                 c["patch"]["system_prompt_after"],
@@ -201,7 +212,7 @@ def patch(pattern_id: str, mode: str) -> dict[str, Any]:
     candidates = []
     for i, c in enumerate(out["candidates"][:2]):
         patched, report = apply_patch(base_cfg, c["system_prompt_after"], c["tool_description_edits"])
-        version = f"v2-candidate-{'ab'[i]}"
+        version = candidate_version(pattern_id, i)
         new_hash = compute_config_hash(patched["model"], patched["system_prompt"], patched["tools"])
         if report.within_bounds:
             store.write_config(

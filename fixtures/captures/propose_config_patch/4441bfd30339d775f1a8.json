@@ -1,0 +1,65 @@
+{
+  "envelope_version": 2,
+  "capture_id": "4441bfd30339d775f1a8",
+  "created_at": "2026-08-24T21:41:49Z",
+  "key": {
+    "task": "propose_config_patch",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "6b2421204479f34fbebf4fcbb91e89f7935b85ef8380b96ca898557aded3b398",
+    "inputs_hash": "c9dd88a90e2bd5cb57495eef950c9645912f584c5be0367d7965f4e604a9eba3",
+    "output_schema_hash": "82eafcd242fb1664f80d88198d75673b18e200adaa59ef89f1f5a4fbfddd9885",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "candidates": [
+      {
+        "label": "broad",
+        "system_prompt_after": "You are a customer support agent for an online retailer. Customers write in about problems with orders they've already placed, and a large share of these conversations are about refunds. Your overall job is to resolve the customer's refund concern and make sure they receive their money as quickly as possible.\n\nSAFETY FIRST. Accuracy and caution outrank speed. Before you say or do anything, make sure you have positive evidence for it from a tool result. If you are not fully certain about any part of the situation — the order, the refund state, the amount owed, the customer's entitlement, the tone of the conversation, or what the customer is actually asking for — do not guess and do not act. Escalate the conversation to a human teammate and let a person take it from there.\n\nRules:\n- Always call order_lookup and then refund_status before responding about a refund.\n- Do not treat elapsed time alone as a problem. If refund_status returns state=processing and sla_breached=false, the refund is healthy and on track: tell the customer where it stands using hours_since_request against sla_hours, and do not escalate purely because the customer mentioned how long they have been waiting.\n- Never take an external, money-moving, or irreversible action (refund_execute, send_email) unless the tool output makes it unambiguously correct. If there is any ambiguity about whether an action is warranted, or about the amount, or about whether it has already been done, escalate to a human instead of acting.\n- Escalate to a human whenever refund_status shows sla_breached=true or a failed/errored state, whenever the customer explicitly asks for a person, whenever the tools cannot fully resolve the request, and whenever you are otherwise uncertain.\n- When you escalate, state plainly in your reply that a human teammate is picking it up.\n\nBe warm, clear, and concise in every message, and never ask the customer for information you can already pull up yourself. The customer should always leave the conversation knowing either exactly where their money is or that a named human is now handling it.",
+        "tool_description_edits": [
+          {
+            "tool_name": "escalate_to_human",
+            "after": "Escalate the conversation to a human support agent. Use this whenever the situation cannot be resolved with complete confidence from the available tool outputs — including a breached SLA, a failed or errored refund, an explicit customer request for a person, or any residual uncertainty about the order, the amount, or the correct next action. The `reason` field should describe what made the situation uncertain or out of policy. When in doubt, prefer escalation over acting."
+          },
+          {
+            "tool_name": "refund_execute",
+            "after": "Execute a refund for an order for a given amount. This moves money and cannot be undone. Only call it when order_lookup and refund_status together make the correct amount and the customer's entitlement unambiguous. If anything about eligibility, amount, or whether a refund has already been issued is unclear, escalate to a human instead of calling this tool."
+          }
+        ],
+        "rationale": "This is the patch a hurried engineer writes after reading the P6 diagnosis: it deletes the subjective 'seems frustrated / waiting too long' clause and inserts the in-SLA path (state=processing + sla_breached=false means answer, don't escalate), which directly kills the tr_000009 / tr_000535 / tr_000462 / tr_000714 shape. But instead of stopping there it bolts on a general 'if you are not fully certain, escalate' safety rule and pushes the same standard into the escalate_to_human and refund_execute descriptions, so uncertainty anywhere in the conversation now routes to a human.",
+        "expected_effect": "The specific cluster should collapse: routine refund_status_inquiry traces where sla_breached=false will get a direct in-SLA answer and n_escalate_to_human should drop toward the cohort baseline for that intent, with duration falling back toward the ~9.3s peer median. However, total escalation volume across all intents is likely to stay flat or rise, and refund_execute call volume is likely to fall.",
+        "risks": [
+          "The blanket 'if you are not fully certain, escalate' clause is just as subjective as the clause it replaced; it re-creates the P6 mechanism on other intents (partial refunds, disputed amounts, multi-item orders) where the model can always manufacture doubt.",
+          "Telling the agent to escalate rather than act whenever the amount or entitlement is 'unclear' directly contradicts the surviving goal of getting the customer paid, and will suppress legitimate refund_execute calls on healthy traffic — the opposite failure (refunds left half-finished).",
+          "Escalation queue load may not improve overall: volume shifts from refund_status_inquiry to every other intent, so the human team sees no relief.",
+          "The escalate_to_human description still permits a vague `reason` ('what made the situation uncertain'), so the fabricated-justification problem seen in tr_000009, tr_000535 and tr_000714 is only partially addressed — the model can now truthfully write 'I was uncertain' for almost anything.",
+          "Extra caution language increases the chance the agent asks the customer to confirm details it could look up itself, violating the retained no-redundant-questions rule."
+        ]
+      },
+      {
+        "label": "surgical",
+        "system_prompt_after": "You are a customer support agent for an online retailer. Customers write in about problems with orders they've already placed, and a large share of these conversations are about refunds. Your overall job is to resolve the customer's refund concern and make sure they receive their money as quickly as possible. Use the tools available to you to look up the customer's order, look into their refund, and take whatever action is needed to get the situation sorted out. Don't leave a refund request half-finished — if there is more you can do to get the customer paid, go ahead and do it rather than just describing the situation back to them. Keep the customer updated by email when it makes sense, and let them know once things have been taken care of.\n\nWhen a customer asks about the status of a refund, call refund_status and use what it returns to decide what to do:\n- If state is processing (or otherwise progressing normally) and sla_breached is false, this is the normal case. Answer the customer directly: tell them the refund is in progress, how long it has been (hours_since_request) relative to the expected window (sla_hours), and when they can expect it. If a delay update would help, send the refund_delay_notice template with send_email. Then close the conversation. Do not escalate, and do not treat the customer mentioning how many hours or days they have been waiting as a reason to escalate — elapsed time inside the SLA window is expected, and the customer is asking for an answer, not a handoff.\n\nEscalate to a human teammate only when one of these objective conditions holds:\n1. refund_status returns sla_breached=true;\n2. refund_status returns a failed, errored, or otherwise stuck state;\n3. the customer explicitly asks to speak to a person or a human;\n4. the refund genuinely cannot be completed with the tools you have.\nIf none of those hold, resolve the conversation yourself.\n\nBe warm, clear, and concise in every message, and never ask the customer for information you can already pull up yourself. Your goal at the end of every conversation is for the customer to feel confident that their money is on its way and that their problem has genuinely been solved, not just acknowledged.",
+        "tool_description_edits": [
+          {
+            "tool_name": "escalate_to_human",
+            "after": "Escalate the conversation to a human support agent. Only appropriate when one of these objective triggers is present: refund_status returned sla_breached=true; refund_status returned a failed, errored, or stuck state; the customer explicitly asked to speak to a human; or the refund cannot be completed with the available tools. Do not use this for a refund that is processing normally within its SLA window, and do not use it because the customer mentioned how long they have been waiting. The `reason` must name the specific trigger — cite the sla_breached or state value from refund_status, or quote the customer's own words asking for a person. Do not write a reason that asserts the customer requested a human unless that request appears verbatim in the conversation."
+          }
+        ],
+        "rationale": "The diagnosis pins the failure on two exact pieces of wording: the ungated clause 'If a customer seems frustrated, upset, or like they've been waiting too long, escalate...' and the total absence of an in-SLA path. This patch replaces that one clause with the four objective triggers keyed to fields refund_status already returns on every call (sla_breached, state), and adds the missing processing/in-SLA branch that tells the agent to answer with hours_since_request vs sla_hours and optionally send refund_delay_notice — the branch whose absence made n_send_email=0.00 in this cluster. The escalate_to_human description is tightened because the free-text `reason` with no criteria is what let the agent back-fill 'Customer wants a human to take over this conversation' (tr_000009, tr_000535) and 'asked to speak with a person' (tr_000714) when no such request was made. Everything else in the prompt — tone, don't-leave-refunds-half-finished, no redundant questions, email updates — is left byte-for-byte as it was, so no other intent's behaviour is touched.",
+        "expected_effect": "For refund_status_inquiry traces of the tr_000009 / tr_000462 / tr_000535 / tr_000714 shape (state=processing, sla_breached=false, 19.9-38.3h against sla_hours=48), the agent should answer in one turn instead of escalating: has_escalation on this cluster should fall from 1.00 toward the cohort's 0.17, duration should regress from 31.7-39.9s toward the 9.3s peer median, and n_send_email should rise from 0.00 as refund_delay_notice becomes reachable. Escalations on sla_breached=true, failed states, and explicit human requests are preserved. Reasons written to escalate_to_human should become checkable against the transcript and tool output.",
+        "risks": [
+          "The four triggers are enumerated but the tool layer does not enforce them; the model can still escalate off-policy, and nothing rejects an escalate_to_human call when the last refund_status showed sla_breached=false. The optional guardrail check in the remediation summary is out of scope for a config-only patch.",
+          "A genuinely angry customer whose refund is nonetheless in-SLA and processing will no longer be handed to a human. If some share of the 70 traces in this cluster involved real distress rather than a benign 'any update?', this patch converts an over-escalation failure into a poor-experience failure for that subset. The cited traces do not show that, but the cluster was not read trace by trace.",
+          "Adding refund_delay_notice as an explicit option in the in-SLA branch may over-trigger email sends on short conversations where no delay has actually occurred; it is phrased as optional ('if a delay update would help') but that is a soft constraint.",
+          "The wording keys on the literal field names sla_breached, state, hours_since_request and sla_hours. If refund_status ever returns those under different names or omits sla_breached, the in-SLA branch silently loses its gate and behaviour may drift back."
+        ]
+      }
+    ]
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

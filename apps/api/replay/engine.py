@@ -57,6 +57,10 @@ def build_cohorts(pattern_id: str, size: int = COHORT_SIZE) -> tuple[list[str], 
     members.sort(key=lambda f: f.trace.trace_id)
     target = [f.trace.trace_id for f in members[:size]]
 
+    # The control cohort has to be mostly traffic that *passes* today — a patch
+    # can only be caught regressing something that currently works. One trace
+    # from each neighbouring pattern keeps an eye on the other known failures
+    # without crowding out the healthy majority.
     flagged_ids = {f.trace.trace_id for f in disc.flagged}
     others: list[str] = []
     for p in disc.patterns:
@@ -65,7 +69,8 @@ def build_cohorts(pattern_id: str, size: int = COHORT_SIZE) -> tuple[list[str], 
         peers = sorted(
             (f.trace.trace_id for f in disc.flagged if f.cluster_id == p.impact["cluster_id"])
         )
-        others.extend(peers[:2])
+        others.extend(peers[:1])
+    others = others[: max(size // 3, 1)]
 
     unflagged = [t for t in store.all_trace_ids() if t not in flagged_ids]
     n_healthy = max(size - len(others), 0)

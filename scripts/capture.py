@@ -160,9 +160,15 @@ def main() -> None:
         versions = capture_patch(target)
     if args.stage in ("counterfactuals", "all"):
         if not versions:
+            prefix = f"v2-{target.lower()}-"
             versions = [
-                c.version for c in store.list_configs() if c.version.startswith("v2-candidate")
+                c.version for c in store.list_configs() if c.version.startswith(prefix)
             ]
+        if not versions:
+            sys.exit(
+                f"No candidate configs for {target}. Run the patch stage first:\n"
+                f"  uv run python -m scripts.capture patch --pattern {target}"
+            )
         print(f"Capturing counterfactual runs for {versions} on {target}…")
         capture_counterfactuals(target, versions, args.size, args.workers)
 

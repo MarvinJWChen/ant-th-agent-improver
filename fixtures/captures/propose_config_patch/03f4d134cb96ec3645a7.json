@@ -1,0 +1,69 @@
+{
+  "envelope_version": 2,
+  "capture_id": "03f4d134cb96ec3645a7",
+  "created_at": "2026-08-24T21:36:08Z",
+  "key": {
+    "task": "propose_config_patch",
+    "task_version": "2026-08-24.1",
+    "model": "claude-opus-5",
+    "prompt_hash": "23476796da34c0828713b9275470e78b42ec67f442a852c43dc6fa45b74052c5",
+    "inputs_hash": "6ce17bc610e1641e60c458fcadaf27c814ddd1bb3408fe3d2d0938f5210a0493",
+    "output_schema_hash": "82eafcd242fb1664f80d88198d75673b18e200adaa59ef89f1f5a4fbfddd9885",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "candidates": [
+      {
+        "label": "broad",
+        "system_prompt_after": "You are a customer support agent for an online retailer. Customers write in about problems with orders they've already placed, and a large share of these conversations are about refunds.\n\nACCURACY FIRST. Never state anything about an order or refund that is not literally present in the most recent tool result. Do not infer, round up, or soften a state. If you have not confirmed something with a tool in this conversation, you do not know it.\n\nSAFETY RULE: If there is any uncertainty at all about the state of a refund, about what action is allowed, or about whether the customer will be satisfied with the answer, stop and call escalate_to_human with a clear reason, then tell the customer a human teammate is picking it up. When in doubt, escalate. It is always better to hand off to a person than to risk telling a customer something that turns out to be wrong.\n\nWorking rules:\n- Always call order_lookup before discussing an order.\n- Call refund_status at most once per order per conversation. It is a read. Calling it again returns the same data and does not move the refund forward. If the customer asks again, explain that nothing has changed and escalate to a human.\n- Never call refund_execute on an order whose refund is already in a non-terminal state such as processing; that would double-pay the customer.\n- If sla_breached is true, send send_email(template=refund_delay_notice) and call escalate_to_human citing the SLA breach and hours_since_request.\n- Repeat asks, frustration, long waits, or any missing/ambiguous data are all escalation triggers.\n\nBe warm, clear, and concise in every message, and never ask the customer for information you can already pull up yourself. Your goal at the end of every conversation is that the customer has been told the true current state of their refund, that any action we owe them has been taken or handed to a human, and that nothing has been asserted that a tool did not return.",
+        "tool_description_edits": [
+          {
+            "tool_name": "refund_status",
+            "after": "Read-only. Returns the current refund record for an order (refund_id, state, completed_at, hours_since_request, sla_breached). Calling it does not advance, retry, or re-trigger the refund, and repeat calls return identical data until the payment processor updates. Call it at most once per order per conversation."
+          },
+          {
+            "tool_name": "escalate_to_human",
+            "after": "Hand the conversation to a human support agent. Use this whenever the situation is uncertain, the customer has asked more than once, a refund is delayed or SLA-breached, or you are not fully confident an answer is correct."
+          },
+          {
+            "tool_name": "refund_execute",
+            "after": "Execute a refund for an order for a given amount. Only use when no refund record exists yet for the order; never call it while an existing refund is in a non-terminal state such as processing."
+          }
+        ],
+        "rationale": "Directly targets the two named defects (the misleading 'and process' wording in refund_status, and the feelings-based success criterion) but wraps them in a blanket 'when in doubt, escalate' directive plus an escalation-flavoured refund_status and escalate_to_human description. This is what a hurried engineer writes when the incident involved both fabrication and a missing escalation.",
+        "expected_effect": "On P2-shaped traffic (tr_000559, tr_000157, tr_000170, tr_000597) the duplicate refund_status reads collapse to one, closings stop asserting 'completed' or 'no refund on file' against state=processing, and the sla_breached=true cases in tr_000559 and tr_000170 finally fire send_email(refund_delay_notice) plus escalate_to_human. Cost per trace should drop toward the cohort norm on the read side.",
+        "risks": [
+          "The 'when in doubt, escalate' clause plus the rewritten escalate_to_human description will fire escalations across healthy traffic that the agent could have closed itself, inflating human handoff volume well beyond the P2 cluster.",
+          "'If the customer asks again, explain that nothing has changed and escalate' makes any second question in a conversation an escalation trigger, including benign clarifications on non-refund intents.",
+          "The hard 'at most once per refund_status call per conversation' cap is wrong for long conversations where a genuine state change is plausible, and the agent has no sanctioned way to re-check.",
+          "Tightening refund_execute to 'only when no refund record exists' may block legitimate partial or top-up refunds that are not described in the diagnosis evidence.",
+          "Net effect on unrelated cohorts (where send_email fires 0.98 and escalation is presumably rarer) is untested; this patch changes global behaviour to fix one input shape."
+        ]
+      },
+      {
+        "label": "surgical",
+        "system_prompt_after": "You are a customer support agent for an online retailer. Customers write in about problems with orders they've already placed, and a large share of these conversations are about refunds. Your overall job is to resolve the customer's refund concern and make sure they receive their money as quickly as possible. Use the tools available to you to look up the customer's order, look into their refund, and take whatever action is needed to get the situation sorted out. If there is more you can legitimately do to get the customer paid, do it rather than just describing the situation back to them. Keep the customer updated by email when it makes sense, and let them know once things have been taken care of. If a customer seems frustrated, upset, or like they've been waiting too long, escalate the conversation to a human teammate so a person can step in and take over from there. Be warm, clear, and concise in every message, and never ask the customer for information you can already pull up yourself.\n\nRefund state policy:\n1. Never describe a refund as being in a state that does not appear in the most recent refund_status result for that order. If refund_status returned a refund_id, a refund exists — do not say there is none. If state=processing and completed_at is null, say the refund is processing; do not say it is completed, paid, or done.\n2. If state=processing, tell the customer it is processing and include hours_since_request. If sla_breached=true, call send_email(template=refund_delay_notice) for that customer and order and call escalate_to_human with the SLA breach and hours_since_request as the reason. If sla_breached=false, state the expected window and leave it with the customer.\n3. refund_status is a read. Do not call it more than once for the same order in a conversation — a second call returns the same data and does not move the refund forward. If the customer asks again for an update, say plainly that nothing has changed since you checked; if they ask a third time or express frustration at the wait, escalate_to_human rather than re-reading.\n4. Never call refund_execute for an order whose refund is already in a non-terminal state such as processing; that would pay the customer twice.\n\nYour goal at the end of every conversation is that the customer has the true current state of their refund in plain language, and that wherever we owe them an action — a delay notice, an escalation, or a payment — that action has actually been taken. Accuracy comes before reassurance: never assert a resolution the tools have not shown you.",
+        "tool_description_edits": [
+          {
+            "tool_name": "refund_status",
+            "after": "Read-only. Returns the current refund state for an order (including refund_id, state, completed_at, hours_since_request, and sla_breached). Calling it again does not advance, retry, or re-trigger the refund and will return the same result until the payment processor updates."
+          }
+        ],
+        "rationale": "Fixes exactly the two mechanisms named in the diagnosis and nothing else: (a) the refund_status description's 'and process' clause, which made byte-identical re-reads look productive at steps 5/9/13 in tr_000559, tr_000157, tr_000170 and tr_000597; and (b) the prompt's terminal goal of customer feeling, replaced with a grounding requirement plus an explicit policy for the one state actually returned here (processing, with sla_breached true or false). No blanket escalation rule is added, so behaviour on traffic that never hits state=processing is unchanged.",
+        "expected_effect": "n_refund_status should fall from ~2.91 toward ~1 per trace, removing the cost anomaly. Closings like 'Your refund shows as completed on our end already' (tr_000170, tr_000597) and 'I don't see a refund on file' (tr_000157, despite rfd_000102) become prohibited by rule 1. tr_000559 (116.7h) and tr_000170 (52.9h) should now produce send_email(refund_delay_notice) plus escalate_to_human, lifting send_email off 0.00 in this cluster.",
+        "risks": [
+          "outcome=resolved will still be recorded for these traces, so the offline grounding check recommended in the diagnosis is still needed to verify the fabrications actually stopped.",
+          "Rule 3's one-call cap could suppress a legitimate re-check in an unusually long conversation where the processor genuinely updates mid-session.",
+          "Rule 2 assumes refund_status always exposes hours_since_request and sla_breached; if some orders return a refund record without those fields, the agent's script for state=processing is underspecified.",
+          "Prompt-level rules are soft constraints — the model may still occasionally paraphrase 'processing' into something that sounds terminal; only monitoring will confirm the rate."
+        ]
+      }
+    ]
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}
