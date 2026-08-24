@@ -130,8 +130,39 @@ def patch(pattern_id: str, mode: str) -> dict[str, Any]:
             agent_config_hash=cfg_hash, tools_hash=t_hash, corpus_hash=corpus_hash,
         )
     except runner.NoCaptureAvailable as e:
+        # No capture yet. The patch *text* falls back to a development fixture and
+        # is labelled unverified, but the candidate configs are still registered
+        # for real so that replay, the Effect Ledger, and the gate keep running
+        # against genuine configurations rather than fixtures of their own.
         fx = devdata.patch(pattern_id, mode)
         fx["provenance"] = _fixture_provenance("propose_config_patch", mode, str(e)).model_dump()
+        bare = [{k: t[k] for k in ("name", "description", "input_schema")} for t in cfg["tools"]]
+        base_cfg = {"model": cfg["model"], "system_prompt": cfg["system_prompt"], "tools": bare}
+        for c in fx["candidates"]:
+            patched, report = apply_patch(
+                base_cfg,
+                c["patch"]["system_prompt_after"],
+                [{"tool_name": e2["tool_name"], "after": e2["after"]}
+                 for e2 in c["patch"]["tool_description_edits"]],
+            )
+            new_hash = compute_config_hash(
+                patched["model"], patched["system_prompt"], patched["tools"]
+            )
+            c["config_hash"] = new_hash
+            c["within_edit_boundary"] = report.within_bounds
+            c["boundary_report"] = report.changes + [f"REJECTED: {v}" for v in report.violations]
+            if report.within_bounds:
+                store.write_config(
+                    version=c["candidate_version"],
+                    created_at=fx["provenance"]["created_at"],
+                    model=patched["model"],
+                    system_prompt=patched["system_prompt"],
+                    tools=patched["tools"],
+                    config_hash=new_hash,
+                    status="candidate",
+                    parent_version="v1",
+                    notes=c["label"],
+                )
         return fx
 
     bare = [{k: t[k] for k in ("name", "description", "input_schema")} for t in cfg["tools"]]

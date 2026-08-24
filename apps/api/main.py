@@ -30,7 +30,7 @@ def _subsystems() -> dict[str, str]:
     """'real' means executed on request; 'fixture' means still stubbed."""
     return {
         "corpus": "real" if store.corpus_available() else "fixture",
-        "discovery": "real" if devdata.has_real("discovery") else "fixture",
+        "discovery": "real" if store.corpus_available() else "fixture",
         "llm_captured": "real" if any(paths.CAPTURES.glob("*/*.json")) else "fixture",
         "replay": "real" if store.corpus_available() else "fixture",
         "gate": "real" if store.corpus_available() else "fixture",
