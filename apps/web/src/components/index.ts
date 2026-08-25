@@ -6,6 +6,7 @@ export { Badge, type BadgeProps, type BadgeTone } from "./Badge";
 export { Table, type TableProps, type TableColumn } from "./Table";
 export { Timeline, type TimelineProps, type TimelineItem, type TimelineEventType } from "./Timeline";
 export { DiffView, type DiffViewProps } from "./DiffView";
+export { ConfigDiff, diffSummary, type ConfigDiffProps, type ToolEdit } from "./ConfigDiff";
 export { KeyValue, type KeyValueProps, type KeyValueItem } from "./KeyValue";
 export {
   GateChecklist,

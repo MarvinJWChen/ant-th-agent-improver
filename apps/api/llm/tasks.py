@@ -43,6 +43,16 @@ DIAGNOSE_SCHEMA = _obj(
      "remediation_kind", "remediation_summary"],
 )
 
+SUMMARY_SCHEMA = _obj(
+    {
+        "headline": _S,
+        "what_happens": _SL,
+        "why_it_matters": _S,
+        "fix_in_one_line": _S,
+    },
+    ["headline", "what_happens", "why_it_matters", "fix_in_one_line"],
+)
+
 PATCH_SCHEMA = _obj(
     {
         "candidates": {
@@ -96,6 +106,11 @@ class Task:
     version: str
     schema: dict[str, Any]
     build: Callable[[dict[str, Any]], tuple[str, str]]
+    # A task that only compresses text someone else already produced does not
+    # need the frontier model or a large thinking budget. Both are part of the
+    # provenance key, so a capture still records exactly what produced it.
+    model: str | None = None
+    effort: str | None = None
 
 
 # ---------------------------------------------------------------- prompt bodies
@@ -257,9 +272,37 @@ def _process_build(inp: dict[str, Any]) -> tuple[str, str]:
     return system, user
 
 
+def _summarize_build(inp: dict[str, Any]) -> tuple[str, str]:
+    system = (
+        "You compress an existing engineering diagnosis into something a reader can "
+        "scan in ten seconds. You add nothing: every claim must already be present in "
+        "the diagnosis you are given. No new traces, tools, metrics or causes. Plain "
+        "language, no preamble, no hedging."
+    )
+    user = (
+        "## Diagnosis to compress\n\n"
+        + json.dumps(inp["diagnosis"], indent=2)
+        + "\n\n## Task\n\n"
+        "Produce:\n"
+        "- `headline`: one sentence naming the defect and its cause. Under 25 words.\n"
+        "- `what_happens`: 3 or 4 bullets, each one short sentence, walking the "
+        "sequence from the trigger to the bad outcome. Under 20 words each.\n"
+        "- `why_it_matters`: one sentence on the impact and why it recurs rather "
+        "than being a one-off. Under 30 words.\n"
+        "- `fix_in_one_line`: one sentence naming the change that removes it. Under "
+        "25 words. If the diagnosis concluded no change is warranted, say that "
+        "instead of inventing a fix."
+    )
+    return system, user
+
+
 TASKS: dict[str, Task] = {
     "diagnose_pattern": Task("diagnose_pattern", "2026-08-24.2", DIAGNOSE_SCHEMA, _diagnose_build),
     "propose_config_patch": Task("propose_config_patch", "2026-08-24.1", PATCH_SCHEMA, _patch_build),
+    "summarize_diagnosis": Task(
+        "summarize_diagnosis", "2026-08-25.1", SUMMARY_SCHEMA, _summarize_build,
+        model="claude-sonnet-5", effort="low",
+    ),
     "propose_code_change": Task("propose_code_change", "2026-08-24.1", CODE_SCHEMA, _code_build),
     "propose_process_change": Task("propose_process_change", "2026-08-24.1", PROCESS_SCHEMA, _process_build),
 }

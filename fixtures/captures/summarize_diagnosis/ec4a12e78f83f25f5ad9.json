@@ -1,0 +1,31 @@
+{
+  "envelope_version": 2,
+  "capture_id": "ec4a12e78f83f25f5ad9",
+  "created_at": "2026-08-25T17:10:47Z",
+  "key": {
+    "task": "summarize_diagnosis",
+    "task_version": "2026-08-25.1",
+    "model": "claude-sonnet-5",
+    "prompt_hash": "4f8329972a2c50858224afa18dcc581709c0c42f919a65f357e0d703cabd8445",
+    "inputs_hash": "f112fc4b736a24444624095246ab109235015a0c0af7c8bad9dcc3790219d52d",
+    "output_schema_hash": "58d102df6e1ee690bfb0d3db12f71f00be10934bfb295b89bb4556e82c65c810",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "headline": "send_email has no idempotency key, so timeout retries can send duplicate emails to customers.",
+    "what_happens": [
+      "Refund completes, and the agent sends a confirmation email as instructed.",
+      "The email call times out after 8-15s but returns delivered:true anyway.",
+      "Seeing an error, the agent retries the same call verbatim.",
+      "Without a declared idempotency key, the retry sometimes creates a brand-new email, duplicating the send."
+    ],
+    "why_it_matters": "This happens every time on this path since the timeout and success-shaped error body are structural, and the same unguarded retry pattern risks duplicate refund_execute calls, i.e. duplicate money movement.",
+    "fix_in_one_line": "Add a required, server-enforced idempotency_key to send_email (and refund_execute) and stop returning success fields alongside timeout errors."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

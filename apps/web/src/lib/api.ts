@@ -146,9 +146,19 @@ export interface Diagnosis {
   remediation_summary: string;
 }
 
+export interface DiagnosisSummary {
+  headline: string;
+  what_happens: string[];
+  why_it_matters: string;
+  fix_in_one_line: string;
+  provenance: Provenance;
+}
+
 export interface DiagnosisResponse {
   diagnosis: Diagnosis;
   provenance: Provenance;
+  /** scannable compression of the diagnosis; absent when no capture exists */
+  summary?: DiagnosisSummary | null;
 }
 
 export interface ConfigPatch {

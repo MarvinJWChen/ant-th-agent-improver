@@ -75,11 +75,13 @@ export interface DiffViewProps {
   diff: string;
   /** optional filename shown in a header bar above the diff */
   filename?: string;
+  /** off for prose diffs, where a segment index is not a line number */
+  showLineNumbers?: boolean;
   className?: string;
 }
 
 /** Unified-diff renderer: line numbers, add/remove backgrounds, its own horizontal scroll container. */
-export function DiffView({ diff, filename, className }: DiffViewProps) {
+export function DiffView({ diff, filename, showLineNumbers = true, className }: DiffViewProps) {
   const lines = useMemo(() => parseDiff(diff), [diff]);
 
   return (
@@ -90,18 +92,29 @@ export function DiffView({ diff, filename, className }: DiffViewProps) {
         </div>
       )}
       <div className="scrollbar-thin overflow-x-auto">
-        <table className="w-full min-w-max border-collapse font-mono text-sm">
+        <table className={cn("w-full border-collapse font-mono text-sm", showLineNumbers && "min-w-max")}>
           <tbody>
             {lines.map((line, i) => (
               <tr key={i} className={ROW_TONE[line.kind]}>
-                <td className="w-12 select-none whitespace-nowrap px-2 py-1 text-right text-muted/70">
-                  {line.oldLine ?? ""}
-                </td>
-                <td className="w-12 select-none whitespace-nowrap px-2 py-1 text-right text-muted/70">
-                  {line.newLine ?? ""}
-                </td>
+                {showLineNumbers && (
+                  <>
+                    <td className="w-12 select-none whitespace-nowrap px-2 py-1 text-right text-muted/70">
+                      {line.oldLine ?? ""}
+                    </td>
+                    <td className="w-12 select-none whitespace-nowrap px-2 py-1 text-right text-muted/70">
+                      {line.newLine ?? ""}
+                    </td>
+                  </>
+                )}
                 <td className="w-5 select-none px-1 py-1 text-center text-muted/70">{SIGN[line.kind]}</td>
-                <td className="whitespace-pre px-2 py-1">{line.content}</td>
+                <td
+                  className={cn(
+                    "px-2 py-1",
+                    showLineNumbers ? "whitespace-pre" : "max-w-[60rem] whitespace-pre-wrap",
+                  )}
+                >
+                  {line.content}
+                </td>
               </tr>
             ))}
           </tbody>

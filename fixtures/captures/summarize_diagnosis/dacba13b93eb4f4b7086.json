@@ -1,0 +1,31 @@
+{
+  "envelope_version": 2,
+  "capture_id": "dacba13b93eb4f4b7086",
+  "created_at": "2026-08-25T17:10:52Z",
+  "key": {
+    "task": "summarize_diagnosis",
+    "task_version": "2026-08-25.1",
+    "model": "claude-sonnet-5",
+    "prompt_hash": "071ad496383b09afeb5533633e368189e82944ef63a840bfb0e255525c21dd30",
+    "inputs_hash": "795fb3ef778e7679ccfd4d9ed094e4143157fd298ce4d5ad1917992fb560ae3d",
+    "output_schema_hash": "58d102df6e1ee690bfb0d3db12f71f00be10934bfb295b89bb4556e82c65c810",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "headline": "The refund tool lets the agent pay customers twice because it has no check for existing completed refunds.",
+    "what_happens": [
+      "Customer asks only for a refund status update.",
+      "Tool shows the refund is completed but SLA-breached, hours past deadline.",
+      "Agent reads the breach as unfinished work and calls refund_execute again.",
+      "Tool creates a brand-new refund for the full amount and reports success."
+    ],
+    "why_it_matters": "Every status check on an old but completed refund reproduces this double payout, and since the tool returns success, monitoring never flags it.",
+    "fix_in_one_line": "Make refund_execute check for and reject or no-op on existing completed refunds, enforcing a per-order refund cap server-side."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

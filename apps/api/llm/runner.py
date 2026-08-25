@@ -83,7 +83,7 @@ def build_key(
     key = cap.ProvenanceKey(
         task=task.name,
         task_version=task.version,
-        model=MODEL,
+        model=task.model or MODEL,
         prompt_hash=cap.sha_text(system + "\x00" + user),
         inputs_hash=cap.sha(inputs),
         output_schema_hash=cap.sha(task.schema),
@@ -96,19 +96,25 @@ def build_key(
     return key, system, user
 
 
-def _call_live(system: str, user: str, schema: dict[str, Any]) -> tuple[dict[str, Any], int]:
+def _call_live(
+    system: str,
+    user: str,
+    schema: dict[str, Any],
+    model: str = MODEL,
+    effort: str = EFFORT,
+) -> tuple[dict[str, Any], int]:
     if not live_available():
         raise LiveUnavailable("ANTHROPIC_API_KEY is not set")
     import anthropic  # lazy: cached mode must not require the SDK to be configured
 
     client = anthropic.Anthropic()
     kw = dict(
-        model=MODEL,
+        model=model,
         max_tokens=MAX_TOKENS,
         system=system,
         messages=[{"role": "user", "content": user}],
         thinking={"type": "adaptive"},
-        output_config={"effort": EFFORT, "format": {"type": "json_schema", "schema": schema}},
+        output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
     )
     t0 = time.time()
     try:
@@ -149,14 +155,16 @@ def run(
     )
 
     if mode == "live":
-        output, latency = _call_live(system, user, task.schema)
+        output, latency = _call_live(
+            system, user, task.schema, task.model or MODEL, task.effort or EFFORT
+        )
         validate(output, task.schema)
         cap.save(key, output, notes="Captured from a live run triggered in the browser.")
         return output, Provenance(
             mode="live",
             task=task.name,
             task_version=task.version,
-            model=MODEL,
+            model=task.model or MODEL,
             created_at=cap.datetime.now(cap.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             verified=True,
             stale_reason=None,
@@ -173,7 +181,7 @@ def run(
         mode="captured",
         task=task.name,
         task_version=task.version,
-        model=found.key.get("model", MODEL),
+        model=found.key.get("model", task.model or MODEL),
         created_at=found.created_at,
         verified=verified,
         stale_reason=None if verified else reason,

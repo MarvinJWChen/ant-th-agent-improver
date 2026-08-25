@@ -77,6 +77,25 @@ def _fixture_provenance(task: str, mode: str, reason: str) -> Provenance:
     return p
 
 
+def summarize(diagnosis: dict[str, Any], mode: str) -> dict[str, Any] | None:
+    """A scannable version of a diagnosis, from a cheaper model.
+
+    Best-effort on purpose: the full diagnosis is the artifact of record, and a
+    missing summary must never take the page down. It compresses text that is
+    already on the page, so it is the one place where a smaller model is the
+    right call.
+    """
+    _, cfg_hash, t_hash, corpus_hash = _hashes()
+    try:
+        out, prov = runner.run(
+            "summarize_diagnosis", {"diagnosis": diagnosis}, mode,
+            agent_config_hash=cfg_hash, tools_hash=t_hash, corpus_hash=corpus_hash,
+        )
+    except Exception:  # noqa: BLE001 - no capture, no key, or a bad response
+        return None
+    return {**out, "provenance": prov.model_dump()}
+
+
 def diagnose(pattern_id: str, mode: str) -> dict[str, Any]:
     inputs = _pattern_inputs(pattern_id)
     _, cfg_hash, t_hash, corpus_hash = _hashes()
@@ -90,9 +109,11 @@ def diagnose(pattern_id: str, mode: str) -> dict[str, Any]:
         fx["provenance"] = _fixture_provenance("diagnose_pattern", mode, str(e)).model_dump()
         fx["diagnosis"]["pattern_id"] = pattern_id
         return fx
+    diagnosis = {"pattern_id": pattern_id, **out}
     return {
-        "diagnosis": {"pattern_id": pattern_id, **out},
+        "diagnosis": diagnosis,
         "provenance": prov.model_dump(),
+        "summary": summarize(diagnosis, mode),
     }
 
 

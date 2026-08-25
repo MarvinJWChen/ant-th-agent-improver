@@ -35,6 +35,7 @@ export function Investigate() {
 
   const p = pat.data.pattern;
   const d = diag.data?.diagnosis;
+  const sum = diag.data?.summary ?? null;
 
   const runDiagnosis = (mode: "captured" | "live") => async () => {
     const r = await diag.run(mode, () => api.diagnose(patternId, mode));
@@ -128,8 +129,43 @@ export function Investigate() {
               </p>
             )}
 
-            <Field label={d.verdict === "failure" ? "Root cause" : "What this is"} body={d.root_cause} />
-            <Field label="Mechanism" body={d.mechanism} />
+            {sum ? (
+              <div className="space-y-4 rounded-lg border border-hairline bg-surface-0 p-5">
+                <p className="text-base leading-relaxed text-primary">{sum.headline}</p>
+                <ol className="space-y-1.5">
+                  {sum.what_happens.map((w, i) => (
+                    <li key={i} className="flex gap-3 leading-relaxed text-secondary">
+                      <span className="shrink-0 font-mono text-muted">{i + 1}</span>
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ol>
+                <div className="grid gap-4 border-t border-hairline pt-4 md:grid-cols-2">
+                  <Field label="why it matters" body={sum.why_it_matters} />
+                  <Field
+                    label={d.verdict === "failure" ? "the fix, in one line" : "conclusion"}
+                    body={sum.fix_in_one_line}
+                  />
+                </div>
+                <p className="text-xs text-muted">
+                  Summarised from the full diagnosis below by {sum.provenance.model} — no new
+                  claims, nothing the analysis did not already say.
+                </p>
+              </div>
+            ) : (
+              <Field
+                label={d.verdict === "failure" ? "Root cause" : "What this is"}
+                body={d.root_cause}
+              />
+            )}
+
+            <div className="space-y-2">
+              {sum && <Detail label="Root cause — the full analysis" body={d.root_cause} />}
+              <Detail label="How it happens, step by step" body={d.mechanism} />
+              <Detail label="Why it keeps happening" body={d.why_it_recurs} />
+              <Detail label="What the fix would be" body={d.remediation_summary} />
+            </div>
+
             <KeyValue
               columns={2}
               items={[
@@ -167,6 +203,27 @@ export function Investigate() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The full analysis, one click away.
+ *
+ * The captured diagnosis runs to a couple of thousand characters. None of it is
+ * cut — but on arrival it hid the finding, so the long form now opens on demand
+ * underneath the summary.
+ */
+function Detail({ label, body }: { label: string; body: string }) {
+  return (
+    <details className="group rounded-lg border border-hairline bg-surface-0">
+      <summary className="cursor-pointer select-none px-4 py-3 text-secondary hover:text-primary">
+        <span className="mr-2 inline-block text-muted transition-transform group-open:rotate-90">
+          &#9656;
+        </span>
+        {label}
+      </summary>
+      <p className="whitespace-pre-line px-4 pb-4 pl-10 leading-relaxed text-secondary">{body}</p>
+    </details>
   );
 }
 

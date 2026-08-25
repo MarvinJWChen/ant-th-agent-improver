@@ -1,0 +1,31 @@
+{
+  "envelope_version": 2,
+  "capture_id": "3ffc31b8a1f3c5d7abfb",
+  "created_at": "2026-08-25T17:11:03Z",
+  "key": {
+    "task": "summarize_diagnosis",
+    "task_version": "2026-08-25.1",
+    "model": "claude-sonnet-5",
+    "prompt_hash": "c76fb75050fb02fd9d4521eea904403818e7144c14f23c6adc38078a3b2bb6a8",
+    "inputs_hash": "820daf544f85e883a7e3f915656e7a2dd5a5e81deb79ea4fb4d2088b35104d8e",
+    "output_schema_hash": "58d102df6e1ee690bfb0d3db12f71f00be10934bfb295b89bb4556e82c65c810",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "headline": "Vague 'waiting too long' escalation trigger causes agent to hand off routine, in-SLA refund status questions to humans.",
+    "what_happens": [
+      "Customer asks a routine status question mentioning elapsed time.",
+      "Refund_status tool returns processing state with SLA not breached.",
+      "Agent ignores the objective SLA data and matches the subjective 'waiting too long' phrasing instead.",
+      "Agent escalates to a human with a fabricated reason, never answering the customer."
+    ],
+    "why_it_matters": "Every in-SLA status inquiry mentioning time hits this same ungated clause, causing 70 traces to escalate needlessly, tripling handling time versus peers.",
+    "fix_in_one_line": "Replace the subjective escalation trigger with objective SLA-breach/state checks and add an explicit in-SLA answer path."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

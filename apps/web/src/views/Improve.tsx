@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Badge, Button, Card, CodeBlock, DiffView, GateChecklist, KeyValue, ProvenanceBadge,
-  SectionHeading, SplitPane, StatTile, Table,
+  Badge, Button, Card, CodeBlock, ConfigDiff, DiffView, GateChecklist, KeyValue, ProvenanceBadge,
+  SectionHeading, SplitPane, StatTile, Table, diffSummary,
 } from "../components";
 import { api, pct } from "../lib/api";
 import type {
   AgentConfig, ArmRun, DiagnosisResponse, Health, LedgerRow, PatchResponse,
   PromoteResponse, ProposalResponse, ReplayRun, TracePair,
 } from "../lib/api";
+import { DEFAULT_AGENT_ID } from "../lib/journey";
 import { useAction, useAsync, useJourney } from "../lib/state";
 import { CapturedLive, Failed, KIND_LABEL, Loading, provenanceProps } from "../lib/ui";
 
@@ -35,6 +36,18 @@ export function Improve() {
   );
 }
 
+/** The two candidates exist to be compared, so the UI names what each one is. */
+const CANDIDATE_META: Record<string, { title: string; gloss: string }> = {
+  broad: {
+    title: "Blanket fix",
+    gloss: "the plausible over-correction",
+  },
+  surgical: {
+    title: "Targeted fix",
+    gloss: "only the clause the diagnosis names",
+  },
+};
+
 /* ------------------------------------------------------------------ config path */
 
 function ConfigImprove({ patternId, summary }: { patternId: string; summary: string }) {
@@ -51,7 +64,8 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
   const [openPair, setOpenPair] = useState<string | null>(null);
 
   const candidates = patch.data?.candidates ?? [];
-  const selected = candidate ?? candidates[candidates.length - 1]?.candidate_version ?? "";
+  // The broad candidate first: the gate blocking it is the point of the step.
+  const selected = candidate ?? candidates[0]?.candidate_version ?? "";
   const r = run.data;
   const active = configs.data?.find((c) => c.status === "active")?.version;
 
@@ -69,9 +83,16 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
       <SectionHeading
         as="h1"
         title="Improve — configuration patch"
-        subtitle={summary}
+        subtitle="Prompt and tool-description wording only, proven against the frozen world before anything ships."
         right={active && <Badge tone="accent" mono dot>{active} active</Badge>}
       />
+
+      <details className="rounded-lg border border-hairline bg-surface-1 px-4 py-3">
+        <summary className="cursor-pointer select-none text-secondary hover:text-primary">
+          What the diagnosis asked for
+        </summary>
+        <p className="mt-3 leading-relaxed text-secondary">{summary}</p>
+      </details>
 
       <Card
         title="1 · Generate candidates"
@@ -90,33 +111,65 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
         {patch.error && <p className="mt-4 text-danger">{patch.error}</p>}
 
         {candidates.length > 0 && (
-          <div className="mt-6 space-y-3">
-            {candidates.map((c) => (
-              <button
-                key={c.candidate_version}
-                onClick={() => {
-                  setCandidate(c.candidate_version);
-                  run.setData(null);
-                }}
-                className={`block w-full rounded-lg border p-4 text-left transition-colors ${
-                  selected === c.candidate_version
-                    ? "border-accent bg-accent-muted"
-                    : "border-hairline hover:border-hairline-strong"
-                }`}
-              >
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-primary">{c.candidate_version}</span>
-                  <Badge tone="neutral">{c.label}</Badge>
-                  <Badge tone={c.within_edit_boundary ? "ok" : "danger"}>
-                    {c.within_edit_boundary ? "within edit boundary" : "rejected"}
-                  </Badge>
+          <div className="mt-6 space-y-4">
+            <p className="leading-relaxed text-secondary">
+              Two candidates, on purpose. The model was asked for the blunt fix a hurried
+              engineer would ship <em>and</em> the minimal fix the diagnosis actually implies.{" "}
+              <span className="text-primary">
+                Both are within the edit boundary — neither is rejected by static validation.
+              </span>{" "}
+              Which one is safe to ship is decided by replay, not by reading them.
+            </p>
+            {candidates.map((c) => {
+              const isSelected = selected === c.candidate_version;
+              const meta = CANDIDATE_META[c.label] ?? { title: c.label, gloss: "" };
+              const diffProps = {
+                systemPromptBefore: c.patch.system_prompt_before,
+                systemPromptAfter: c.patch.system_prompt_after,
+                toolEdits: c.patch.tool_description_edits,
+              };
+              return (
+                <div
+                  key={c.candidate_version}
+                  className={`rounded-lg border transition-colors ${
+                    isSelected ? "border-accent bg-accent-muted" : "border-hairline"
+                  }`}
+                >
+                  <button
+                    onClick={() => {
+                      setCandidate(c.candidate_version);
+                      run.setData(null);
+                    }}
+                    className="block w-full p-4 text-left"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-primary">{meta.title}</span>
+                      <span className="font-mono text-muted">{c.candidate_version}</span>
+                      <Badge tone={c.within_edit_boundary ? "ok" : "danger"}>
+                        {c.within_edit_boundary ? "within edit boundary" : "rejected"}
+                      </Badge>
+                    </div>
+                    <p className="mb-2 text-muted">
+                      {meta.gloss} · {diffSummary(diffProps)}
+                    </p>
+                    <p className="leading-relaxed text-secondary">{c.patch.rationale}</p>
+                    {c.patch.risks.length > 0 && (
+                      <p className="mt-2 leading-relaxed text-warn">risk: {c.patch.risks[0]}</p>
+                    )}
+                  </button>
+                  <div className="border-t border-hairline px-4 py-4">
+                    <div className="mb-3 text-xs uppercase tracking-wide text-muted">
+                      exactly what it changes
+                    </div>
+                    <ConfigDiff
+                      {...diffProps}
+                      fromLabel={c.parent_version}
+                      toLabel={c.candidate_version}
+                    />
+                  </div>
                 </div>
-                <p className="leading-relaxed text-secondary">{c.patch.rationale}</p>
-                {c.patch.risks.length > 0 && (
-                  <p className="mt-2 leading-relaxed text-warn">risk: {c.patch.risks[0]}</p>
-                )}
-              </button>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
@@ -254,6 +307,14 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
                 <p className={promote.data.promoted ? "text-ok" : "text-danger"}>
                   {promote.data.message}
                 </p>
+              )}
+              {promote.data?.promoted && (
+                <a
+                  href={`/agents/${DEFAULT_AGENT_ID}`}
+                  className="text-accent underline-offset-4 hover:underline"
+                >
+                  See it on the agent’s configuration →
+                </a>
               )}
               {!r.gate.promotable && (
                 <p className="text-muted">

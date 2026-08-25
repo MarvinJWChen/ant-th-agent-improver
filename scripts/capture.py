@@ -43,6 +43,19 @@ def capture_diagnoses() -> list[str]:
     return kinds
 
 
+def capture_summaries() -> None:
+    """One cheap call per diagnosis. Runs after diagnoses, reads their captures."""
+    for p in pipeline.discover().patterns:
+        t0 = time.time()
+        res = services.diagnose(p.pattern_id, "captured")
+        if not res["provenance"].get("verified"):
+            print(f"  – summary  {p.pattern_id}: no verified diagnosis, skipped")
+            continue
+        out = services.summarize(res["diagnosis"], "live")
+        ok = "✓" if out else "✗"
+        print(f"  {ok} summary  {p.pattern_id}  ({time.time() - t0:.1f}s)")
+
+
 def capture_proposals(kinds) -> None:
     for pid, _ in kinds:
         t0 = time.time()
@@ -124,7 +137,10 @@ def captured_kinds() -> list[tuple[str, str]]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["diagnoses", "proposals", "patch", "counterfactuals", "all"])
+    ap.add_argument(
+        "stage",
+        choices=["diagnoses", "summaries", "proposals", "patch", "counterfactuals", "all"],
+    )
     ap.add_argument("--pattern", default=None, help="pattern id for patch/counterfactual stages")
     ap.add_argument("--size", type=int, default=12, help="cohort size per arm")
     ap.add_argument("--workers", type=int, default=6, help="parallel agent runs")
@@ -140,6 +156,9 @@ def main() -> None:
     if args.stage in ("diagnoses", "all"):
         print("Capturing diagnoses…")
         kinds = capture_diagnoses()
+    if args.stage in ("summaries", "all"):
+        print("Capturing diagnosis summaries…")
+        capture_summaries()
     if args.stage in ("proposals", "all"):
         print("Capturing proposals…")
         if not kinds:

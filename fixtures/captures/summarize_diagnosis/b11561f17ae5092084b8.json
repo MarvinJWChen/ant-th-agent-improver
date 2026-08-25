@@ -1,0 +1,31 @@
+{
+  "envelope_version": 2,
+  "capture_id": "b11561f17ae5092084b8",
+  "created_at": "2026-08-25T17:10:57Z",
+  "key": {
+    "task": "summarize_diagnosis",
+    "task_version": "2026-08-25.1",
+    "model": "claude-sonnet-5",
+    "prompt_hash": "c720dada5f4bff9ef943b468beb3332934ee4431cfb8b7e1a5252ee8b4d8f2ba",
+    "inputs_hash": "bbd133e3ab9feb9e577f2fa91a3a709cc5f0d974e770f0409c3f5b39c3daa80f",
+    "output_schema_hash": "58d102df6e1ee690bfb0d3db12f71f00be10934bfb295b89bb4556e82c65c810",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "headline": "Agent abandons refund requests after one lookup, falsely claiming the customer never responded, instead of finishing the refund.",
+    "what_happens": [
+      "Customer asks for a refund with all needed order details in their first message.",
+      "Agent calls order_lookup, which returns found=true with amount and customer_id.",
+      "Instead of continuing to refund_status and refund_execute, the agent sends a canned 'we didn't hear back' closing message.",
+      "The refund is never executed, no confirmation email is sent, and the case is recorded as abandoned."
+    ],
+    "why_it_matters": "This truncation happens in 72 traces (17% of flagged cases) because the prompt never defines a required action sequence or forbids closing before a refund is completed.",
+    "fix_in_one_line": "Add an explicit ordered completion contract in the system prompt requiring lookup→refund_status→refund_execute→send_email before closing, and forbid premature 'no response' closures."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Badge, Button, Card, SectionHeading, StatTile, Table } from "../components";
+import { Badge, Button, Card, CodeBlock, ConfigDiff, SectionHeading, StatTile, Table } from "../components";
 import { api, fmtMs, pct } from "../lib/api";
-import type { AgentOverview, Health, ToolDef } from "../lib/api";
+import type { AgentConfig, AgentOverview, Health, ToolDef } from "../lib/api";
 import { useAction, useAsync, useJourney } from "../lib/state";
 import { Failed, Loading } from "../lib/ui";
 
@@ -24,6 +24,7 @@ export function Overview() {
   const journey = useJourney();
   const { data, error, loading } = useAsync<AgentOverview>(() => api.agent(), []);
   const health = useAsync<Health>(() => api.health(), []);
+  const configs = useAsync<AgentConfig[]>(() => api.configs(), []);
   const discover = useAction<unknown>();
 
   if (loading) return <Loading label="Loading agent" />;
@@ -91,6 +92,8 @@ export function Overview() {
         </p>
       </Card>
 
+      <ConfigCard active={data.active_config} all={configs.data ?? []} />
+
       <Card
         title="Tool surface"
         subtitle="Each tool declares its blast radius. Replay refuses to execute anything not declared here."
@@ -139,6 +142,64 @@ export function Overview() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The configuration itself — the thing every other screen is arguing about.
+ *
+ * Once a patch is promoted this is where the change is visible: the same diff
+ * that was reviewed on the Improve page, now against the version it replaced.
+ * A reset drops the candidates and reactivates v1, so this card goes back to
+ * showing a plain baseline.
+ */
+function ConfigCard({ active, all }: { active: AgentConfig; all: AgentConfig[] }) {
+  const parent = all.find((c) => c.version === active.parent_version);
+  return (
+    <Card
+      title="Agent configuration"
+      subtitle="What the agent is told, and what its tools claim to do. This is the only surface a promoted patch may change."
+      right={
+        <div className="flex items-center gap-2">
+          <Badge tone="accent" mono dot>
+            {active.version} active
+          </Badge>
+          {parent && <Badge tone="ok">promoted</Badge>}
+        </div>
+      }
+    >
+      {parent ? (
+        <div className="space-y-4">
+          <p className="leading-relaxed text-secondary">
+            Promoted from <span className="font-mono text-primary">{parent.version}</span> after
+            passing the replay gate. Every difference between the two:
+          </p>
+          <ConfigDiff
+            systemPromptBefore={parent.system_prompt}
+            systemPromptAfter={active.system_prompt}
+            toolEdits={active.tools.map((t) => ({
+              tool_name: t.name,
+              before: parent.tools.find((x) => x.name === t.name)?.description ?? "",
+              after: t.description,
+            }))}
+            fromLabel={parent.version}
+            toLabel={active.version}
+          />
+        </div>
+      ) : (
+        <p className="leading-relaxed text-secondary">
+          Baseline configuration — nothing has been promoted yet.
+        </p>
+      )}
+      <details className="mt-4 rounded-lg border border-hairline bg-surface-0 px-4 py-3">
+        <summary className="cursor-pointer select-none text-secondary hover:text-primary">
+          Full system prompt ({active.version})
+        </summary>
+        <div className="mt-3">
+          <CodeBlock code={active.system_prompt} maxHeightClassName="max-h-80" />
+        </div>
+      </details>
+    </Card>
   );
 }
 

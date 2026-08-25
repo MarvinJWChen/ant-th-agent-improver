@@ -1,0 +1,31 @@
+{
+  "envelope_version": 2,
+  "capture_id": "b022f993b13d2f8ec45d",
+  "created_at": "2026-08-25T17:11:08Z",
+  "key": {
+    "task": "summarize_diagnosis",
+    "task_version": "2026-08-25.1",
+    "model": "claude-sonnet-5",
+    "prompt_hash": "222b5d0e3d39f39d33a3796deb45267a3c6ae0aaf30c94a7af73b4cf3f4a5866",
+    "inputs_hash": "c3a6f6d3ac74ad3ca433ce1d5c4229feded14372f6fe96ca265513e917a288c1",
+    "output_schema_hash": "58d102df6e1ee690bfb0d3db12f71f00be10934bfb295b89bb4556e82c65c810",
+    "agent_config_hash": "12d9ef2ba9109c72f8dc556a0f10e6738860d50dc2189377cdfd19971819a298",
+    "tools_hash": "80613d3e850e28065941fc117e45ea9ae99d6e0915272b779ebebaf07d0077f6",
+    "corpus_hash": "4a4e2b1d59e7f624612367fd1f8919c10659a212b72bc611ab17730cecde3814",
+    "world_hash": "n/a",
+    "loop_version": "n/a"
+  },
+  "output": {
+    "headline": "Not a defect: agent correctly escalates refunds stuck past SLA in processing state with no completion data.",
+    "what_happens": [
+      "Customer asks about a refund that's already stuck in processing past the 48h SLA.",
+      "Agent checks order and refund status, confirming no completion and sla_breached=true.",
+      "Since the refund already exists, agent avoids re-executing it to prevent a duplicate payout.",
+      "Agent sends the accurate delay notice and escalates to a human per policy."
+    ],
+    "why_it_matters": "This is the expected response rate for a subpopulation of refunds stuck by an upstream processor issue, not an agent regression, and will keep recurring while that processor issue persists.",
+    "fix_in_one_line": "No agent-side fix needed; instead verify escalate_to_human's queued status reliably reaches a human and monitor upstream processor SLA breaches."
+  },
+  "notes": "Captured from a live run triggered in the browser.",
+  "extra": {}
+}

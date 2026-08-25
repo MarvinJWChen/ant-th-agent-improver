@@ -177,9 +177,20 @@ class Diagnosis(BaseModel):
     remediation_summary: str
 
 
+class DiagnosisSummary(BaseModel):
+    """A scannable compression of a Diagnosis, produced by a cheaper model."""
+
+    headline: str
+    what_happens: list[str]
+    why_it_matters: str
+    fix_in_one_line: str
+    provenance: Provenance
+
+
 class DiagnosisResponse(BaseModel):
     diagnosis: Diagnosis
     provenance: Provenance
+    summary: DiagnosisSummary | None = None
 
 
 class ToolDescriptionEdit(BaseModel):
