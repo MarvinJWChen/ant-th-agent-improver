@@ -5,8 +5,6 @@ import type { AgentOverview, Health, ToolDef } from "../lib/api";
 import { useAction, useAsync, useJourney } from "../lib/state";
 import { Failed, Loading } from "../lib/ui";
 
-export { Failed, Loading };
-
 const EFFECT_TONE: Record<string, "ok" | "warn" | "danger" | "neutral"> = {
   read: "ok",
   shadow_write: "warn",

@@ -12,7 +12,6 @@ Checks:
 """
 from __future__ import annotations
 
-import random
 import sqlite3
 import subprocess
 import sys

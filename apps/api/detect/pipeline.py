@@ -10,8 +10,6 @@ from __future__ import annotations
 import time
 from datetime import datetime, timezone
 
-import numpy as np
-
 from apps.api import store
 from apps.api.contracts import DiscoveryResult, EvidenceHit, FlaggedTrace, PatternCard
 from apps.api.detect import anomaly, cluster, evaluators
@@ -134,7 +132,6 @@ def discover(force: bool = False) -> DiscoveryResult:
         patterns=patterns,
         flagged=sorted(flagged, key=lambda f: -f.anomaly_score),
     )
-    result.model_config  # noqa: B018 - touch to keep pydantic import obvious
     _CACHE[key] = result
     print(f"[discovery] {n_corpus} traces → {len(flagged)} flagged → k={k} "
           f"silhouette={silhouette:.3f} in {time.time() - t0:.1f}s")

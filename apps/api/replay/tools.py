@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from apps.api import tool_registry

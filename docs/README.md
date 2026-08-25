@@ -27,5 +27,5 @@ It keeps every human turn and every reply verbatim, compacts tool calls to one
 chip each, and marks idle gaps plus any interrupt/resume boundary. It refuses to
 render if the secret scan finds anything.
 
-Rendered for this build:
-https://claude.ai/code/artifact/9c64c0a6-5cdd-43dd-a42c-3cad663845b7
+Output is a private page tied to your own account. Keep the link out of this
+repo — it is a record of a working session, not a project artifact.

@@ -2,8 +2,8 @@
 
 Everything here is a placeholder that exists so the browser journey is complete
 from minute one. Each function is replaced by a real executable path as its
-subsystem lands; `has_real()` is what /api/health reports, so the UI can label
-any remaining stub honestly instead of pretending.
+subsystem lands. /api/health reports which subsystems are real by inspecting the
+actual state on disk, so the UI can label any remaining stub honestly.
 """
 from __future__ import annotations
 
@@ -14,23 +14,6 @@ from typing import Any
 
 _RNG = random.Random(4242)
 _PROMOTED: set[str] = set()
-
-# Flipped on as each subsystem lands. Read by /api/health.
-_REAL: dict[str, bool] = {
-    "discovery": False,
-    "llm": False,
-    "replay": False,
-    "gate": False,
-}
-
-
-def has_real(name: str) -> bool:
-    return _REAL.get(name, False)
-
-
-def mark_real(name: str) -> None:
-    _REAL[name] = True
-
 
 def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -50,7 +33,6 @@ def try_real_discovery(force: bool = False) -> dict[str, Any] | None:
 
     if not store.corpus_available():
         return None
-    mark_real("discovery")
     return pipeline.discover(force=force).model_dump()
 
 

@@ -4,7 +4,7 @@ import { api, pct } from "../lib/api";
 import type { AgentOverview, Health } from "../lib/api";
 import { useAsync, useJourney } from "../lib/state";
 import { DEFAULT_AGENT_ID } from "../lib/journey";
-import { Failed, Loading } from "./Overview";
+import { Failed, Loading } from "../lib/ui";
 
 /**
  * Step 1 — the managed agents this deployment is watching.

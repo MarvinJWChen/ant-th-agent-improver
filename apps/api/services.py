@@ -169,7 +169,6 @@ def propose(pattern_id: str, mode: str) -> dict[str, Any]:
 def patch(pattern_id: str, mode: str) -> dict[str, Any]:
     """Generate candidate configs and register the in-bounds ones as versions."""
     diag = stable_diagnosis(pattern_id, mode)
-    inputs = _pattern_inputs(pattern_id)
     cfg, cfg_hash, t_hash, corpus_hash = _hashes()
     try:
         out, prov = runner.run(
