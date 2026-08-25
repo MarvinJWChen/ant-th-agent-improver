@@ -196,7 +196,7 @@ function ConfigCard({ active, all }: { active: AgentConfig; all: AgentConfig[] }
           Full system prompt ({active.version})
         </summary>
         <div className="mt-3">
-          <CodeBlock code={active.system_prompt} maxHeightClassName="max-h-80" />
+          <CodeBlock code={active.system_prompt} wrap maxHeightClassName="max-h-[36rem]" />
         </div>
       </details>
     </Card>

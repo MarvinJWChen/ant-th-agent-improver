@@ -260,8 +260,10 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
                       const d = m.c - m.b;
                       if (Math.abs(d) < 1e-9) return <span className="text-muted">—</span>;
                       const better = m.good === "down" ? d < 0 : d > 0;
+                      const tone =
+                        m.good === "context" ? "text-secondary" : better ? "text-ok" : "text-danger";
                       return (
-                        <span className={better ? "text-ok" : "text-danger"}>
+                        <span className={tone}>
                           {d > 0 ? "+" : ""}
                           {fmtMetric(m.k, d)}
                         </span>
@@ -273,6 +275,12 @@ function ConfigImprove({ patternId, summary }: { patternId: string; summary: str
                 rowKey={(m) => m.k}
               />
             </div>
+            <p className="mt-4 leading-relaxed text-muted">
+              <span className="text-secondary">Handled without a human</span> is context, not a
+              score. Escalating a conversation the agent cannot finish is better than abandoning
+              it, so a fall here can be the fix working. The four gate checks below are what
+              decide.
+            </p>
           </Card>
 
           <Card
@@ -457,7 +465,8 @@ function ProposalImprove({
             <CodeBlock
               filename="system_prompt (proposed)"
               code={r.config.system_prompt_after}
-              maxHeightClassName="max-h-72"
+              wrap
+              maxHeightClassName="max-h-[36rem]"
             />
           </div>
         )}
@@ -473,7 +482,8 @@ interface MetricRow {
   label: string;
   b: number;
   c: number;
-  good: "down" | "up";
+  /** "context" rows are reported, not scored — a fall can be the fix working. */
+  good: "down" | "up" | "context";
 }
 
 function fmtMetric(k: string, v: number): string {
@@ -485,7 +495,7 @@ function metricRows(r: ReplayRun): MetricRow[] {
     { k: "premature_escalation_rate", label: "Avoidable escalations", b: r.baseline_metrics.premature_escalation_rate, c: r.candidate_metrics.premature_escalation_rate, good: "down" },
     { k: "double_refund_rate", label: "Double refunds", b: r.baseline_metrics.double_refund_rate, c: r.candidate_metrics.double_refund_rate, good: "down" },
     { k: "duplicate_confirmation_rate", label: "Duplicate confirmations", b: r.baseline_metrics.duplicate_confirmation_rate, c: r.candidate_metrics.duplicate_confirmation_rate, good: "down" },
-    { k: "resolution_rate", label: "Self-resolved", b: r.baseline_metrics.resolution_rate, c: r.candidate_metrics.resolution_rate, good: "up" },
+    { k: "resolution_rate", label: "Handled without a human", b: r.baseline_metrics.resolution_rate, c: r.candidate_metrics.resolution_rate, good: "context" },
     { k: "avg_turns", label: "Average turns", b: r.baseline_metrics.avg_turns, c: r.candidate_metrics.avg_turns, good: "down" },
   ];
 }

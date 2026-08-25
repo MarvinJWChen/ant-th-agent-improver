@@ -56,10 +56,15 @@ export function Investigate() {
       />
 
       <Card title="Evidence" subtitle={`${p.size} traces behave this way.`}>
+        <div className="mb-3 text-muted">
+          Each line below is one hit from a different trace in this cluster — not one trace
+          described three ways.
+        </div>
         <ul className="mb-6 space-y-2">
           {p.representative_evidence.map((e, i) => (
-            <li key={i} className="leading-relaxed text-secondary">
-              — {e}
+            <li key={i} className="flex flex-wrap items-baseline gap-2 leading-relaxed">
+              <span className="font-mono text-muted">{p.evidence_trace_ids[i] ?? "—"}</span>
+              <span className="text-secondary">{e}</span>
             </li>
           ))}
         </ul>

@@ -132,6 +132,11 @@ class PatternCard(BaseModel):
     top_features: list[str]
     exemplar_trace_ids: list[str]
     representative_evidence: list[str]
+    # Which trace each evidence line came from, positionally. They are drawn
+    # from different traces in the cluster, and without this the reader sees
+    # three unrelated traces as one contradictory description. Excluded from
+    # the diagnosis inputs like `verdict` is, so existing captures still verify.
+    evidence_trace_ids: list[str] = Field(default_factory=list)
     impact: dict[str, Any]
 
 

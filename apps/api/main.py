@@ -128,7 +128,11 @@ def get_pattern(pattern_id: str):
     res = get_discovery()
     for p in res["patterns"]:
         if p["pattern_id"] == pattern_id:
-            flagged = [f for f in res["flagged"] if f.get("cluster_id") == p.get("cluster_id")]
+            # The cluster id lives under `impact` — a PatternCard has no
+            # top-level one, so comparing against p.get("cluster_id") matched
+            # None to None and returned an empty list for every pattern.
+            cluster_id = p["impact"]["cluster_id"]
+            flagged = [f for f in res["flagged"] if f.get("cluster_id") == cluster_id]
             return {
                 "pattern": p,
                 "flagged": flagged[:40],

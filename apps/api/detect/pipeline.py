@@ -91,9 +91,15 @@ def discover(force: bool = False) -> DiscoveryResult:
             continue
         title, signature, top_features = cluster.describe(labels, cid, sub_feats)
         rule_members = [m for m in members if m.rule_flagged]
-        evidence = [h.detail for m in members[:6] for h in m.hits if h.source == "evaluator"][:3]
-        if not evidence:
-            evidence = [h.detail for m in members[:3] for h in m.hits][:3]
+        cited = [
+            (m.trace.trace_id, h.detail)
+            for m in members[:6]
+            for h in m.hits
+            if h.source == "evaluator"
+        ][:3]
+        if not cited:
+            cited = [(m.trace.trace_id, h.detail) for m in members[:3] for h in m.hits][:3]
+        evidence = [d for _, d in cited]
         exemplars = sorted(members, key=lambda m: -m.anomaly_score)[:6]
         patterns.append(
             PatternCard(
@@ -107,6 +113,7 @@ def discover(force: bool = False) -> DiscoveryResult:
                 top_features=top_features,
                 exemplar_trace_ids=[m.trace.trace_id for m in exemplars],
                 representative_evidence=evidence,
+                evidence_trace_ids=[t for t, _ in cited],
                 impact={
                     "traces": len(members),
                     "share_of_corpus": round(len(members) / max(n_corpus, 1), 4),

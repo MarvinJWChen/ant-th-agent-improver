@@ -104,6 +104,8 @@ export interface PatternCard {
   top_features: string[];
   exemplar_trace_ids: string[];
   representative_evidence: string[];
+  /** the trace each evidence line came from, positionally */
+  evidence_trace_ids: string[];
   impact: Record<string, number | string>;
 }
 

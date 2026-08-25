@@ -64,7 +64,7 @@ def _pattern_inputs(pattern_id: str) -> dict[str, Any]:
     # existing capture the moment the annotation was added. Anything that is not
     # a genuine input to the prompt stays out of here.
     return {
-        "pattern": pattern.model_dump(exclude={"verdict"}),
+        "pattern": pattern.model_dump(exclude={"verdict", "evidence_trace_ids"}),
         "config": cfg,
         "traces": traces,
     }

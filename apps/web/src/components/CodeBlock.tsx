@@ -9,9 +9,18 @@ export interface CodeBlockProps {
   className?: string;
   /** cap the block's height and scroll vertically inside it */
   maxHeightClassName?: string;
+  /** wrap long lines instead of scrolling sideways — for prose, e.g. a system prompt */
+  wrap?: boolean;
 }
 
-export function CodeBlock({ code, filename, language, className, maxHeightClassName }: CodeBlockProps) {
+export function CodeBlock({
+  code,
+  filename,
+  language,
+  className,
+  maxHeightClassName,
+  wrap = false,
+}: CodeBlockProps) {
   const hasHeader = !!filename || !!language;
   return (
     <div className={cn("overflow-hidden rounded-lg border border-hairline bg-surface-2", className)}>
@@ -28,6 +37,7 @@ export function CodeBlock({ code, filename, language, className, maxHeightClassN
       <pre
         className={cn(
           "scrollbar-thin overflow-x-auto p-4 font-mono text-sm leading-relaxed text-primary",
+          wrap && "whitespace-pre-wrap break-words",
           maxHeightClassName && cn("overflow-y-auto", maxHeightClassName),
         )}
       >
